@@ -337,7 +337,7 @@ export default class World extends Phaser.Scene {
     const mapFlags = ['bridge_fixed', 'bridge_flimsy', 'stall_fixed', 'garden_bloom', 'meadow_replanted'];
     if (flag === 'wisp_friend') { this.spawnCompanion(); }
     if (flag === 'wicks_relit') this.cameras.main.flash(600, 255, 230, 170);
-    if (mapFlags.includes(flag) || flag === 'inspector_here' || flag === 'child_escort' || flag === 'wisp_bottled' || flag === 'wisp_friend') {
+    if (mapFlags.includes(flag) || flag === 'prologue_done' || flag === 'inspector_here' || flag === 'child_escort' || flag === 'wisp_bottled' || flag === 'wisp_friend') {
       this.needsRebuild = true;
     }
   }
