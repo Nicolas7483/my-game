@@ -3,7 +3,7 @@ import { UI, TILE } from '../config.js';
 import { QUESTS } from '../../content/story.js';
 import { ITEMS } from '../../content/items.js';
 import { Window, text, itemIcon } from '../ui/Window.js';
-import { apply } from '../systems/State.js';
+import { useItem } from '../systems/State.js';
 import { bus } from '../systems/bus.js';
 import { writeSlot, readSlot, slotSummary, exportCode, importCode } from '../systems/Save.js';
 import { startGame } from '../systems/Game.js';
@@ -52,6 +52,7 @@ export default class Menu extends Phaser.Scene {
     this.state = this.registry.get('state');
     this.tab = Math.max(0, TABS.findIndex(t => t.id === (data.tab === 'main' ? 'bag' : data.tab)));
     this.focus = data.tab === 'main' ? 'tabs' : 'content';
+    this.direct = data.tab !== 'main'; // opened with I/J/M: one Esc closes it
     this.sel = 0;
   }
 
@@ -103,7 +104,7 @@ export default class Menu extends Phaser.Scene {
   side(d) {
     const row = this.rows?.[this.sel];
     if (this.focus === 'content' && row?.adjust) { row.adjust(d); this.sfx('move'); return this.render(); }
-    if (d < 0 && this.focus === 'content') { this.focus = 'tabs'; this.sfx('move'); return this.render(); }
+    if (d < 0 && this.focus === 'content') { this.direct = false; this.focus = 'tabs'; this.sfx('move'); return this.render(); }
     if (d > 0 && this.focus === 'tabs' && this.rows?.length) { this.focus = 'content'; this.sel = 0; this.sfx('move'); return this.render(); }
   }
 
@@ -118,7 +119,7 @@ export default class Menu extends Phaser.Scene {
   }
 
   back() {
-    if (this.focus === 'content') { this.focus = 'tabs'; this.sfx('cancel'); return this.render(); }
+    if (this.focus === 'content' && !this.direct) { this.focus = 'tabs'; this.sfx('cancel'); return this.render(); }
     this.close();
   }
 
@@ -179,7 +180,7 @@ export default class Menu extends Phaser.Scene {
     const inv = this.state.d.inv;
     this.rows = inv.map(it => ({
       item: it.id, icon: it.id, label: ITEMS[it.id]?.name ?? it.id, right: it.n > 1 ? `x${it.n}` : '',
-      action: () => { const item = ITEMS[it.id]; if (item?.use) { apply(this.state, item.use); this.sfx('confirm'); } },
+      action: () => { const item = ITEMS[it.id]; if (useItem(this.state, item)) this.sfx('confirm'); },
     }));
     if (!this.rows.length) this.t(160, 56, 'Empty. Pockets full of lint.', UI.dim);
     this.drawRows(164, 50, 16);

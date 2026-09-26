@@ -52,6 +52,7 @@ for (const [id, d] of Object.entries(DIALOGUES)) {
       if (dash.test(node.text)) err(`${w}: em/en dash`);
     }
     if (node.next && !d.nodes[node.next]) err(`${w}: next -> missing ${node.next}`);
+    for (const b of node.branch ?? []) if (b.next && !d.nodes[b.next]) err(`${w}: branch -> missing ${b.next}`);
     checkEffects(w, node.effects);
     for (const c of node.choices ?? []) {
       if (c.text.length > 34) err(`${w}: choice too long "${c.text}"`);
@@ -109,7 +110,8 @@ function runDialogue(state, id, rand, log, careful) {
       log.push(`${id}: "${c.text}"`);
       apply(state, c.effects);
       node = c.next ? d.nodes[c.next] : null;
-    } else node = node.next ? d.nodes[node.next] : null;
+    } else if (node.branch) { const b = node.branch.find(x => check(state, x.if)); node = b?.next ? d.nodes[b.next] : null; }
+    else node = node.next ? d.nodes[node.next] : null;
   }
 }
 
@@ -127,7 +129,10 @@ function simulate(seed, maxSteps = 600, careful = false) {
     const acts = available(state);
     const a = acts[Math.floor(rand() * acts.length)];
     if (a.kind === 'talk') runDialogue(state, a.id, rand, log, careful);
-    else if (a.kind === 'warp') { state.d.map = a.to; log.push(`-> ${a.to}`); }
+    else if (a.kind === 'warp') {
+      state.d.map = a.to; log.push(`-> ${a.to}`);
+      if (a.to === 'meadow' && !state.has('seen_meadow')) { state.set('seen_meadow'); if (!state.isNight()) state.d.hour = 20; if (state.quest('span') !== undefined) state.setQuest('span', -1); }
+    }
     else state.d.hour = state.isNight() ? 8 : 21;
   }
   return { ended, state, log };

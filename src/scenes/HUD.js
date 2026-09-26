@@ -3,7 +3,7 @@ import { UI, TILE } from '../config.js';
 import { QUESTS } from '../../content/story.js';
 import { ITEMS } from '../../content/items.js';
 import { Window, text, shadowText, itemIcon } from '../ui/Window.js';
-import { apply } from '../systems/State.js';
+import { useItem } from '../systems/State.js';
 import { bus } from '../systems/bus.js';
 import { EMOTES } from './Preload.js';
 
@@ -170,7 +170,7 @@ export default class HUD extends Phaser.Scene {
     if (!item) { this.game.audioManager.sfx('cancel', { volume: 0.5 }); return; }
     const sl = this.slots[i];
     this.tweens.add({ targets: sl.icon, y: sl.y + 10, yoyo: true, duration: 80 });
-    if (item.use) apply(this.state, item.use);
+    if (item.use) useItem(this.state, item);
     else { this.toast({ text: `${item.name}: ${item.desc}`, icon: 'item', item: id, long: true }); this.game.audioManager.sfx('move'); }
   }
 

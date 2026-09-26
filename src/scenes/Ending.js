@@ -12,6 +12,8 @@ export default class Ending extends Phaser.Scene {
 
   create() {
     const state = this.registry.get('state');
+    this.scene.setVisible(false, 'HUD');
+    this.events.once('shutdown', () => this.scene.setVisible(true, 'HUD'));
     const bg = this.add.rectangle(0, 0, WIDTH, HEIGHT, 0x07081a, 0).setOrigin(0);
     this.tweens.add({ targets: bg, fillAlpha: 0.92, duration: 1200 });
     this.game.audioManager.play('story', this);

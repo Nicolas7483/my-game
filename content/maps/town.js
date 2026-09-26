@@ -72,13 +72,13 @@ export default {
       ['tent', 18, 19, { id: 'stall_tent', examine: 'barrels' }], ['market_goods', 17, 21, { id: 'stall_goods', examine: 'barrels', solid: 1 }],
       ['barrels', 14, 19, { examine: 'barrels' }],
       // Nettie's and Hobb's houses
-      ['hut', 13, 26, { examine: 'mailbox' }], ['signpost', 17, 29, { examine: 'mailbox' }],
-      ['house_orange2', 3, 28, { examine: 'mill' }], ['crates2', 10, 30, { examine: 'barrels' }], ['planks_long', 3, 33],
+      ['hut', 13, 26], ['signpost', 17, 29, { examine: 'mailbox' }],
+      ['house_orange2', 3, 28], ['crates2', 10, 30], ['planks_long', 3, 33],
       ['planks', 10, 33], ['stump', 5, 35], ['cart', 9, 35],
       // Gil's house near the dock
-      ['house_wood', 41, 26, { examine: 'fishnet' }], ['barrel', 44, 27], ['pot', 40, 28],
+      ['house_wood', 41, 26], ['barrel', 44, 27], ['pot', 40, 28],
       // Nan Wren's cottage (south)
-      ['house_round', 24, 33, { id: 'wren_house', examine: 'mailbox' }], ['bush_round', 23, 35], ['berrybush', 28, 33],
+      ['house_round', 24, 33, { id: 'wren_house' }], ['bush_round', 23, 35], ['berrybush', 28, 33],
       // shrine
       ['statue_orb', 35, 29, { id: 'shrine', examine: 'shrine' }], ['stone_lantern', 34, 30, { examine: 'shrine' }], ['stone_lantern', 38, 30, { examine: 'shrine' }],
       ['torii', 35, 32, { examine: 'shrine' }], ['oak_pink', 30, 30], ['oak_pink', 39, 30],
@@ -86,8 +86,8 @@ export default {
       ['boulder', 43, 37],
       ['tree_round', 23, 29], ['tree', 16, 33], ['oak_autumn', 12, 12], ['tree', 36, 12],
       // more homes
-      ['house_green', 16, 14, { examine: 'mailbox' }], ['shop_blue', 22, 14, { examine: 'notice_board' }], ['house_orange2', 31, 14],
-      ['house_wood', 44, 19, { examine: 'fishnet' }], ['house_red', 18, 29], ['barrel', 21, 32], ['lamp', 25, 17, { examine: 'lamp_post' }],
+      ['house_green', 16, 14], ['shop_blue', 22, 14, { examine: 'notice_board' }], ['house_orange2', 31, 14],
+      ['house_wood', 44, 19], ['house_red', 18, 29], ['barrel', 21, 32], ['lamp', 25, 17, { examine: 'lamp_post' }],
       ['bush', 16, 36], ['tree_lime', 2, 36], ['boulder_grey', 7, 37],
       ['tree_pink', 14, 21], ['bush_round', 36, 21], ['tree', 43, 13], ['bush', 30, 17], ['banner_red', 26, 20], ['banner_green', 30, 20],
       ['berrybush_orange', 42, 35], ['tree_round', 38, 36],
@@ -127,7 +127,6 @@ export default {
       { x: 27, y: 7, w: 2, h: 5, dialogue: 'bridge_break' },
       { x: 7, y: 17, examine: 'inn_sign' },
       { x: 39, y: 17, examine: 'workshop_window' },
-      { x: 25, y: 35, examine: 'mailbox' },
       { x: 50, y: 26, w: 3, h: 3, examine: 'boat' },
       { x: 43, y: 28, examine: 'fishnet' },
     ];

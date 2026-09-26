@@ -47,12 +47,19 @@ export default class World extends Phaser.Scene {
     this.arriveSpot = data.spot;
     this.intro = data.intro;
     this.busy = false; // true while a dialogue or menu owns the input
+    this.transitioning = false; this.needsRebuild = false; this.pendingFade = null; this.pendingEnding = false; this.qaMove = null;
   }
 
   create() {
     const def = MAPS[this.mapId];
     this.def = def;
     this.state.d.map = this.mapId;
+    if (this.mapId === 'meadow' && !this.state.has('seen_meadow')) {
+      // The first crossing happens as the sun goes down, so the meadow is always met by starlight.
+      this.state.set('seen_meadow');
+      if (!this.state.isNight()) this.state.d.hour = 20;
+      if (this.state.quest('span') !== undefined) this.state.setQuest('span', -1);
+    }
     this.md = buildMap(def, this.state);
     this.registry.set('mapData', this.md);
     this.registry.set('mapDef', def);

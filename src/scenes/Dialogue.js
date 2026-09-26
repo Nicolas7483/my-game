@@ -54,7 +54,7 @@ export default class Dialogue extends Phaser.Scene {
   goto(id) {
     const node = id && this.dlg.nodes[id];
     if (!node) return this.close();
-    if (node.branch) {
+    if (node.branch && !node.text) {
       const b = node.branch.find(x => check(this.state, x.if));
       return this.goto(b?.next);
     }
@@ -164,6 +164,7 @@ export default class Dialogue extends Phaser.Scene {
       return this.goto(c.next);
     }
     this.game.audioManager.sfx('move', { volume: 0.4 });
+    if (this.node?.branch) return this.goto(this.node.branch.find(x => check(this.state, x.if))?.next);
     if (this.node?.next) return this.goto(this.node.next);
     this.close();
   }

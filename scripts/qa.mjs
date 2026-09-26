@@ -109,7 +109,8 @@ const saved = await ev(() => !!localStorage.getItem('lanternfall.save.1'));
 ok('saving to slot 1 works', saved);
 await press('Escape'); await press('Escape'); await wait(300);
 ok('menu closes with Esc', !(await ev(() => window.__game.scene.getScene('Menu').sys.isActive())));
-await press('i'); await wait(300); await shot('10-bag'); await press('Escape'); await press('Escape');
+await press('i'); await wait(300); await shot('10-bag'); await press('Escape'); await wait(300);
+ok('one Esc closes a menu opened with I', !(await ev(() => window.__game.scene.getScene('Menu').sys.isActive())));
 
 // 6. Night
 await ev(() => { const w = window.__world; w.state.d.hour = 22; w.updateSky(); });
@@ -138,6 +139,12 @@ await page.waitForFunction(() => window.__world?.mapId === 'meadow' && window.__
 await wait(1200);
 ok('walking north over the fixed bridge reaches the meadow', await ev(() => window.__world.mapId === 'meadow'));
 await shot('12-meadow');
+await talkUntilDone();
+const m0 = await ev(() => [window.__world.player.x, window.__world.player.y]);
+await hold('ArrowUp', 600); await hold('ArrowLeft', 400);
+const m1 = await ev(() => [window.__world.player.x, window.__world.player.y]);
+ok('hero can still move after changing map', Math.hypot(m1[0] - m0[0], m1[1] - m0[1]) > 10, `${m0.map(Math.round)} -> ${m1.map(Math.round)}`);
+ok('first meadow visit happens at nightfall', await ev(() => window.__world.state.isNight()));
 
 // 9. HUD grid audit + performance
 const grid = await ev(() => (window.__windows || []).filter(w => w.active && w.visible).map(w => [w.x, w.y, w.w, w.h]).filter(([x, y, w, h]) => x % 8 || y % 8 || w % 8 || h % 8));

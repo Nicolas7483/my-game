@@ -110,6 +110,17 @@ export function check(state, c) {
   return true;
 }
 
+// Using an item from the hotbar or bag. Healing food is kept when hearts are already full.
+export function useItem(state, item) {
+  if (!item?.use) return false;
+  if (item.use.some(e => typeof e.heal === 'number') && state.d.hp >= state.d.maxHp) {
+    bus.emit('toast', { text: 'Hearts are full. Save it for later.', icon: 'heart' });
+    return false;
+  }
+  apply(state, item.use);
+  return true;
+}
+
 // ---- Effects ----------------------------------------------------------------
 export function apply(state, effects) {
   if (!effects) return;

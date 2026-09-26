@@ -1,6 +1,13 @@
 // Fallback lines when inspecting something with no special text. Keys match prefab name prefixes.
 export const FALLBACK = {
   house: ['A cosy house. Someone is humming inside.', 'The door is shut. A smell of soup escapes anyway.', 'Warm light leaks under the door.'],
+  hut: ['A little cabin. Smoke curls from the chimney like a question.', 'Someone inside is arguing with a kettle.'],
+  inn: ['The inn. Laughter and the smell of plum cake leak through the walls.'],
+  field: ['Tidy rows of turnips. Fen swears one of them is named after you.', 'The soil is warm. Something is growing, slowly, stubbornly.'],
+  scarecrow: ['The scarecrow wears Hobb\'s old hat. The crows find this hilarious.'],
+  sprout: ['A tiny sprout. It will be a turnip someday. Dream big.'],
+  sign: ['A painted sign: a strawberry. Coral insists it is a plum.'],
+  crates: ['Crates of lantern glass, packed in straw.'],
   shop: ['A little shop. The sign is freshly painted.', 'Closed for the evening. Mostly.'],
   bigtree: ['An old tree. Its roots have seen more storms than you.', 'Birds argue somewhere in the leaves.'],
   tree: ['A tree. It rustles, politely.', 'Bark carved with initials: "S + ?". Hm.', 'A beetle waves at you. Probably.'],
