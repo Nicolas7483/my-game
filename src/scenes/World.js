@@ -399,6 +399,7 @@ export default class World extends Phaser.Scene {
     this.updatePlayer(dt);
     this.updateNpcs(dt, delta);
     this.updateCompanion(dt);
+    this.updatePrompt();
     this.autosaveTimer += dt;
     if (this.autosaveTimer > 120) this.autosave();
   }
@@ -478,6 +479,24 @@ export default class World extends Phaser.Scene {
     c.y += (ty - c.y) * Math.min(1, dt * 4);
     c.setDepth(DEPTH.world + c.y);
     c.glow.setPosition(c.x, c.y - 8);
+  }
+
+  // A small speech bubble over whoever is in front of the hero, so it is always clear who can be talked to.
+  updatePrompt() {
+    if (!this.prompt) {
+      this.prompt = this.add.image(0, 0, 'emote20').setDepth(DEPTH.fx).setVisible(false);
+      this.tweens.add({ targets: this.prompt, scale: { from: 0.9, to: 1.05 }, yoyo: true, repeat: -1, duration: 400 });
+    }
+    const p = this.player;
+    const [fx, fy] = DIRS[p.facing];
+    const px = p.x + fx * 12, py = p.y - 4 + fy * 12;
+    let best = null, bestD = 16;
+    if (!this.busy) for (const n of this.npcs) {
+      const d = Math.hypot(n.x - px, n.y - 4 - py);
+      if (d < bestD) { best = n; bestD = d; }
+    }
+    this.prompt.setVisible(!!best);
+    if (best) this.prompt.setPosition(Math.round(best.x), Math.round(best.y - 24));
   }
 
   // ---------------------------------------------------------------- interaction
