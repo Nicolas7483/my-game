@@ -26,7 +26,7 @@ export default class Title extends Phaser.Scene {
     let x = -8;
     for (const name of row) {
       const pf = PREFABS[name];
-      const key = 'i_' + pf.sheet, fr = `${pf.c},${pf.r},${pf.w},${pf.h}`;
+      const key = 't_' + pf.sheet, fr = `${pf.c},${pf.r},${pf.w},${pf.h}`;
       const tex = this.textures.get(key);
       if (!tex.has(fr)) tex.add(fr, 0, pf.c * 16, pf.r * 16, pf.w * 16, pf.h * 16);
       const img = this.add.image(x, 238, key, fr).setOrigin(0, 1).setTint(0x3a3460);

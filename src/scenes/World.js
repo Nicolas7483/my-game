@@ -97,9 +97,9 @@ export default class World extends Phaser.Scene {
     let gid = 1;
     const tilesets = {};
     for (const key of Object.keys(SHEETS)) {
-      const src = this.textures.get('i_' + key).getSourceImage();
+      const src = this.textures.get('t_' + key).getSourceImage();
       const count = Math.floor(src.width / TILE) * Math.floor(src.height / TILE);
-      tilesets[key] = map.addTilesetImage(key, 'i_' + key, TILE, TILE, 0, 0, gid);
+      tilesets[key] = map.addTilesetImage(key, 't_' + key, TILE, TILE, 0, 0, gid);
       tilesets[key].first = gid;
       gid += count;
     }
@@ -130,7 +130,7 @@ export default class World extends Phaser.Scene {
     this.lights = [];
     for (const pr of this.md.props) {
       const { pf } = pr;
-      const key = 'i_' + pf.sheet;
+      const key = 't_' + pf.sheet;
       const frameName = `${pf.c},${pf.r},${pf.w},${pf.h}`;
       const tex = this.textures.get(key);
       if (!tex.has(frameName)) tex.add(frameName, 0, pf.c * TILE, pf.r * TILE, pf.w * TILE, pf.h * TILE);
@@ -261,12 +261,13 @@ export default class World extends Phaser.Scene {
 
   updateSky(force) {
     const hr = this.state.d.hour;
-    this.night.setFillStyle(skyAt(hr));
+    if (force || Math.abs(hr - (this.skyHour ?? -1)) > 0.01) { this.skyHour = hr; this.night.setFillStyle(skyAt(hr)); }
     const d = darkness(hr);
     this.dark = d;
     for (const l of this.lights) {
       const target = l.always ? 0.35 + d * 0.65 : l.isLantern ? d * 0.85 : d;
-      l.setAlpha(target * (0.92 + Math.random() * 0.08));
+      l.phase ??= Math.random() * 6.28;
+      l.setAlpha(target * (0.95 + 0.05 * Math.sin(this.time.now * 0.004 + l.phase)));
     }
     this.fireflies.emitting = d > 0.5;
     this.leaves.emitting = d < 0.5;
@@ -280,7 +281,7 @@ export default class World extends Phaser.Scene {
   }
 
   respawnNpcs() {
-    for (const n of this.npcs) { n.glow?.destroy(); n.destroy(); }
+    for (const n of this.npcs) { this.tweens.killTweensOf(n.spr); n.glow?.destroy(); n.destroy(); }
     this.lights = this.lights.filter(l => l.active);
     this.spawnNpcs();
   }
@@ -429,7 +430,7 @@ export default class World extends Phaser.Scene {
       this.bumped = false;
       if (p.moving) this.animate(p, p.facing, false);
     }
-    p.setDepth(DEPTH.world + p.y);
+    const pd = DEPTH.world + Math.round(p.y); if (p.depth !== pd) p.setDepth(pd);
     this.lantern.setPosition(p.x, p.y - 8);
     this.state.d.x = p.x; this.state.d.y = p.y; this.state.d.facing = p.facing;
   }
@@ -464,7 +465,7 @@ export default class World extends Phaser.Scene {
           this.animate(n, Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down', true);
         }
       }
-      n.setDepth(DEPTH.world + n.y);
+      const nd = DEPTH.world + Math.round(n.y); if (n.depth !== nd) n.setDepth(nd);
       n.glow?.setPosition(n.x, n.y - 8);
     }
   }

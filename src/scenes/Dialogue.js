@@ -19,6 +19,7 @@ export default class Dialogue extends Phaser.Scene {
     this.dlg = data.id ? DIALOGUES[data.id] : null;
     this.lines = data.lines;
     this.lineIdx = 0;
+    this.closing = false; this.choices = null; this.choiceTexts = []; this.cursor = null; this.node = null;
   }
 
   create() {

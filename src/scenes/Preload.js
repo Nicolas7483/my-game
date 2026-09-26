@@ -22,7 +22,6 @@ export default class Preload extends Phaser.Scene {
     this.load.setPath('assets/');
     this.load.bitmapFont('pixel', 'fonts/pixel.png', 'fonts/pixel.xml');
     for (const [key, s] of Object.entries(SHEETS)) this.load.spritesheet('t_' + key, s.file, { frameWidth: 16, frameHeight: 16 });
-    for (const key of Object.keys(SHEETS)) this.load.image('i_' + key, SHEETS[key].file);
     const chars = new Set([...CHARACTERS, ...Object.values(NPCS).map(n => n.sprite?.toLowerCase()).filter(Boolean)]);
     for (const c of chars) {
       this.load.spritesheet('c_' + c, `chars/${c}.png`, { frameWidth: 16, frameHeight: 16 });
@@ -45,7 +44,6 @@ export default class Preload extends Phaser.Scene {
     this.load.spritesheet('smoke', 'fx/smoke.png', { frameWidth: 32, frameHeight: 32 });
     this.load.image('fog', 'fx/fog.png');
     for (const [k, f] of Object.entries(SFX)) this.load.audio('s_' + k, f);
-    this.load.audio('m_intro', 'music/intro.ogg');
   }
 
   create() {
