@@ -29,7 +29,7 @@ export const DEPTH = { ground: 0, terrain: 1, overlay: 2, deco: 3, world: 10, ab
 
 export const SPEED = 78; // px per second
 export const DAY_LENGTH = 16 * 60; // seconds of real time for a full day
-export const START_HOUR = 17.5; // the story starts at dusk
+export const START_HOUR = 18; // the story starts at dusk
 
 export const MUSIC_VOLUME = 0.35;
 export const SFX_VOLUME = 0.5;

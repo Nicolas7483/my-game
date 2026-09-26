@@ -59,8 +59,8 @@ ok('hero walks with arrow keys', x1 > x0 + 20, `${x0.toFixed(1)} -> ${x1.toFixed
 await hold('d', 300);
 const x2 = await ev(() => window.__world.player.x);
 ok('hero walks with WASD', x2 > x1 + 5);
-// push into the well (solid) from the south
-await ev(() => { const w = window.__world; w.player.x = 27 * 16 + 8; w.player.y = 24 * 16 + 4; });
+// push into the plaza statue (solid) from the south
+await ev(() => { const w = window.__world; w.player.x = 31 * 16; w.player.y = 25 * 16 + 4; });
 await hold('ArrowUp', 800);
 const yWell = await ev(() => window.__world.player.y);
 ok('solid props block the hero', yWell > 23 * 16 + 4, `y=${yWell.toFixed(1)}`);
@@ -91,7 +91,7 @@ await wait(2500);
 await shot('06-after-fen-toasts');
 
 // 4. Interact with an object (examine)
-await ev(() => { const w = window.__world; w.player.x = 27 * 16 + 8; w.player.y = 24 * 16 + 4; });
+await ev(() => { const w = window.__world; w.player.x = 31 * 16; w.player.y = 25 * 16 + 4; });
 await hold('ArrowUp', 500);
 await press('Space'); await wait(500);
 const exam = await ev(() => window.__game.scene.getScene('Dialogue').full);

@@ -27,7 +27,7 @@ for (const name of ['ground', 'terrain', 'overlay', 'deco']) {
     if (t) comp.push({ input: await tile(t.sheet, t.i), left: x * T, top: y * T });
   }
 }
-const props = [...md.props].sort((a, b) => (a.y + a.pf.h) - (b.y + b.pf.h));
+const props = [...md.props].sort((a, b) => (b.pf.floor ? 1 : 0) - (a.pf.floor ? 1 : 0) || (a.y + a.pf.h) - (b.y + b.pf.h));
 for (const p of props) {
   const s = SHEETS[p.pf.sheet];
   const buf = await sharp(`public/assets/${s.file}`).extract({ left: p.pf.c * T, top: p.pf.r * T, width: p.pf.w * T, height: p.pf.h * T }).png().toBuffer();

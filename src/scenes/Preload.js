@@ -31,7 +31,8 @@ export default class Preload extends Phaser.Scene {
     for (const a of ['cat', 'dog', 'frog']) this.load.spritesheet('a_' + a, `animals/${a}.png`, { frameWidth: 16, frameHeight: 16 });
     const icons = new Set(Object.values(ITEMS).map(i => i.icon).filter(i => !i.includes(':')));
     for (const i of icons) this.load.image('it_' + i, `items/${i}.png`);
-    this.load.image('it_goldcoin', 'items/goldcoin.png');
+    this.load.spritesheet('coin', 'items/coin2.png', { frameWidth: 10, frameHeight: 10 });
+    for (const i of ['bag', 'book', 'letter2']) this.load.image('it_' + i, `items/${i}.png`);
     this.load.spritesheet('hearts', 'ui/heart.png', { frameWidth: 16, frameHeight: 16 });
     for (let i = 1; i <= 30; i++) this.load.image('emote' + i, `ui/emote${i}.png`);
     this.load.image('boat', 'tiles/boat.png');
@@ -65,8 +66,8 @@ export default class Preload extends Phaser.Scene {
       ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
       tex.refresh();
     };
-    mk('glow', 64, [[0, 'rgba(255,220,150,1)'], [0.35, 'rgba(255,190,110,0.55)'], [1, 'rgba(255,160,80,0)']]);
-    mk('glow_big', 160, [[0, 'rgba(255,225,170,0.9)'], [0.4, 'rgba(255,200,130,0.35)'], [1, 'rgba(255,170,90,0)']]);
+    mk('glow', 64, [[0, 'rgba(255,196,120,0.6)'], [0.3, 'rgba(255,180,100,0.35)'], [0.7, 'rgba(255,160,80,0.12)'], [1, 'rgba(255,150,70,0)']]);
+    mk('glow_big', 160, [[0, 'rgba(255,210,150,0.6)'], [0.4, 'rgba(255,190,120,0.25)'], [1, 'rgba(255,170,90,0)']]);
     mk('glow_violet', 96, [[0, 'rgba(200,150,255,0.9)'], [0.4, 'rgba(150,100,230,0.4)'], [1, 'rgba(120,80,200,0)']]);
     mk('glow_cyan', 64, [[0, 'rgba(190,255,255,1)'], [0.4, 'rgba(120,220,255,0.45)'], [1, 'rgba(90,180,255,0)']]);
     mk('dim', 128, [[0, 'rgba(120,110,140,0.75)'], [0.6, 'rgba(110,100,130,0.45)'], [1, 'rgba(100,90,120,0)']]);

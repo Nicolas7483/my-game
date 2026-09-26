@@ -45,7 +45,7 @@ export function text(scene, x, y, str, color = UI.text, opts = {}) {
   const t = scene.add.bitmapText(x, y, FONT, str, FONT_SIZE);
   t.setTint(color);
   if (opts.maxWidth) t.setMaxWidth(opts.maxWidth);
-  t.setLineSpacing(LINE - 11);
+  t.setLineSpacing(LINE - 10);
   return t;
 }
 
@@ -61,7 +61,7 @@ export function shadowText(scene, x, y, str, color = UI.text) {
 }
 
 export function itemIcon(scene, x, y, id) {
-  const icon = ITEMS[id]?.icon ?? 'goldcoin';
+  const icon = ITEMS[id]?.icon ?? 'bag';
   let img;
   if (icon.includes(':')) {
     const [sheet, i] = icon.split(':');

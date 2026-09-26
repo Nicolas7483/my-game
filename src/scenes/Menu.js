@@ -56,15 +56,17 @@ export default class Menu extends Phaser.Scene {
   }
 
   create() {
-    this.add.rectangle(0, 0, 480, 270, 0x05060f, 0.55).setOrigin(0);
+    this.add.rectangle(0, 0, 480, 270, 0x0a0c20, 0.6).setOrigin(0);
+    this.scene.setVisible(false, 'HUD');
+    this.events.once('shutdown', () => this.scene.setVisible(true, 'HUD'));
     this.tabWin = new Window(this, 16, 24, 112, 128);
     this.tabTexts = TABS.map((t, i) => text(this, 36, 32 + i * 16, t.label));
     this.tabCursor = this.add.graphics();
     this.contentWin = new Window(this, 136, 24, 328, 224);
-    this.goldWin = new Window(this, 16, 160, 112, 32);
-    this.add.image(28, 176, 'it_goldcoin');
-    this.goldText = text(this, 38, 171, `${this.state.d.gold} gold`, UI.gold);
-    this.playText = text(this, 16, 200, '', UI.dim);
+    this.goldWin = new Window(this, 16, 160, 112, 40);
+    this.add.image(28, 173, 'coin', 0);
+    this.goldText = text(this, 38, 169, `${this.state.d.gold} gold`, UI.gold);
+    this.playText = text(this, 24, 183, '', UI.dim);
     const mins = Math.floor(this.state.d.playtime / 60);
     this.playText.setText(`Played ${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`);
     this.help = text(this, 16, 256, '', UI.dim);
@@ -206,7 +208,7 @@ export default class Menu extends Phaser.Scene {
     if (done.length) { this.t(148, y, 'Done: ' + done.map(d => QUESTS[d]?.title).join(', '), UI.dim, { maxWidth: 300 }); y += 22; }
     const aff = Phaser.Math.Clamp(s.var('aff_sella'), 0, 5);
     this.t(148, y, 'Sella', UI.select);
-    for (let i = 0; i < 5; i++) this.layer.add(this.add.image(190 + i * 16, y + 4, 'hearts', i < aff ? 0 : 4).setScale(0.75));
+    for (let i = 0; i < 5; i++) this.layer.add(this.add.image(190 + i * 16, y + 4, 'hearts', i < aff ? 4 : 0).setScale(0.75));
     y += 18;
     const mem = MEMORY.filter(([f]) => s.has(f)).map(([, l]) => l);
     this.t(148, y, 'The village remembers', UI.gold); y += 12;

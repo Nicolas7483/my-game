@@ -26,7 +26,7 @@ export default class Dialogue extends Phaser.Scene {
     bus.emit('dialogue-open');
     this.box = new Window(this, BOX.x, BOX.y, BOX.w, BOX.h);
     this.portraitFrame = this.add.graphics();
-    this.portrait = this.add.image(BOX.x + 28, BOX.y + 36, 'f_hunter').setVisible(false);
+    this.portrait = this.add.image(BOX.x + 28, BOX.y + 32, 'f_hunter').setVisible(false);
     this.nameTab = new Window(this, 16, 176, 88, 16).setVisible(false);
     this.nameText = text(this, 24, 179, '', UI.select);
     this.body = text(this, 0, 0, '', UI.text);
@@ -73,13 +73,14 @@ export default class Dialogue extends Phaser.Scene {
     const pf = this.portraitFrame.clear();
     const tx = face ? BOX.x + 56 : BOX.x + 12;
     if (face) {
-      pf.fillStyle(UI.outline, 1).fillRect(BOX.x + 8, BOX.y + 16, 40, 40);
-      pf.fillStyle(0x3a4fb8, 1).fillRect(BOX.x + 9, BOX.y + 17, 38, 38);
+      pf.fillStyle(UI.outline, 1).fillRect(BOX.x + 7, BOX.y + 11, 42, 42);
+      pf.fillStyle(UI.border, 1).fillRect(BOX.x + 8, BOX.y + 12, 40, 40);
+      pf.fillStyle(0x3a4fb8, 1).fillRect(BOX.x + 9, BOX.y + 13, 38, 38);
       this.portrait.setTexture('f_' + face).setVisible(true);
     } else this.portrait.setVisible(false);
     this.nameTab.setVisible(!!name);
     this.nameText.setText(name);
-    this.body.setPosition(tx, BOX.y + 10).setMaxWidth(BOX.x + BOX.w - 12 - tx).setTint(narration ? UI.dim : UI.text);
+    this.body.setPosition(tx, BOX.y + 12).setMaxWidth(BOX.x + BOX.w - 12 - tx).setTint(narration ? UI.dim : UI.text);
     this.full = String(node.text ?? '').replace(/[—–]/g, ',');
     this.shown = 0;
     this.typing = true;
@@ -117,7 +118,6 @@ export default class Dialogue extends Phaser.Scene {
     this.choiceTexts = this.choices.map((c, i) => {
       const t = text(this, x + 20, y + 7 + i * 12, c.text, UI.text);
       const dot = this.add.graphics();
-      if (c.tone) dot.fillStyle(TONE[c.tone] ?? UI.dim, 1).fillRect(x + w - 12, y + 9 + i * 12, 4, 4);
       return { t, dot };
     });
     this.cursor = this.add.graphics();

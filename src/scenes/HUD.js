@@ -7,13 +7,14 @@ import { apply } from '../systems/State.js';
 import { bus } from '../systems/bus.js';
 import { EMOTES } from './Preload.js';
 
-// Layout on the 8px grid (see docs/hud-spec.md).
+// Layout on the 8px grid (see docs/style-guide.md).
 const L = {
   status: [8, 8, 128, 40],
-  toast: [144, 8, 224, 24],
-  mini: [376, 8, 96, 72],
-  quest: [344, 88, 128, 48],
+  toast: [144, 8, 192, 24],
+  mini: [344, 8, 128, 96],
+  quest: [344, 112, 128, 48],
   hotbar: [168, 232, 144, 32],
+  keys: [320, 232, 88, 32],
 };
 const MINI_PX = 2; // minimap pixels per tile
 
@@ -58,14 +59,13 @@ export default class HUD extends Phaser.Scene {
     this.hearts = [0, 1, 2].map(i => this.add.image(sx + 7 + i * 15, sy + 5, 'hearts', 0).setOrigin(0));
     this.clockLabel = text(this, sx + 62, sy + 7, '', UI.select);
     this.clockTime = text(this, sx + 94, sy + 7, '', UI.text);
-    this.coin = this.add.image(sx + 11, sy + 29, 'it_goldcoin');
+    this.coin = this.add.image(sx + 12, sy + 28, 'coin', 0);
     this.goldText = text(this, sx + 20, sy + 24, '', UI.gold);
     this.placeText = text(this, sx + 62, sy + 24, '', UI.dim);
 
     // Minimap
     const [mx, my, mw, mh] = L.mini;
     this.miniWin = new Window(this, mx, my, mw, mh);
-    this.miniMaskG = this.make.graphics().fillStyle(0xffffff).fillRect(mx + 4, my + 4, mw - 8, mh - 8);
     this.miniImg = null;
     this.miniDots = this.add.graphics();
 
@@ -84,19 +84,26 @@ export default class HUD extends Phaser.Scene {
       const x = hx + 4 + i * 28, y = hy + 4;
       g.fillStyle(UI.outline, 0.55).fillRect(x, y, 24, 24);
       g.lineStyle(1, 0x6a78c8, 1).strokeRect(x + 0.5, y + 0.5, 23, 23);
-      const num = text(this, x + 2, y + 1, String(i + 1), UI.dim);
+      const num = text(this, x + 18, y + 15, String(i + 1), UI.dim);
       this.slots.push({ x, y, num, icon: null, count: null });
     }
     this.slotGfx = g;
-    const hint = 0xe8ecff;
-    this.hintL = shadowText(this, 16, 240, 'Space  Talk / Look', hint);
-    this.hintL2 = shadowText(this, 16, 251, 'Shift  Run', hint);
-    this.hintR = shadowText(this, 320, 240, 'I Bag    M Map', hint);
-    this.hintR2 = shadowText(this, 320, 251, 'J Log    Esc Menu', hint);
-    this.hints = [this.hintL, this.hintL2, this.hintR, this.hintR2];
-    this.bottom = [this.hotWin, this.slotGfx, ...this.slots.map(s => s.num)];
-    this.hintsOn = this.state.d.playtime < 240;
-    for (const h of this.hints) h.setAlpha(this.hintsOn ? 1 : 0);
+    // Shortcut panel: Bag, Map, Journal (click-free key caps, no floating text)
+    const [kx, ky, kw, kh] = L.keys;
+    this.keyWin = new Window(this, kx, ky, kw, kh);
+    const kg = this.add.graphics();
+    const keys = [['it_bag', 'I'], ['it_letter2', 'M'], ['it_book', 'J']];
+    this.keyParts = [this.keyWin, kg];
+    keys.forEach(([icon, key], i) => {
+      const x = kx + 4 + i * 28, y = ky + 4;
+      kg.fillStyle(UI.outline, 0.55).fillRect(x, y, 24, 24);
+      kg.lineStyle(1, 0x6a78c8, 1).strokeRect(x + 0.5, y + 0.5, 23, 23);
+      const img = this.add.image(x + 12, y + 11, icon);
+      if (img.width > 16 || img.height > 16) img.setScale(14 / Math.max(img.width, img.height));
+      const t = text(this, x + 17, y + 15, key, UI.select);
+      this.keyParts.push(img, t);
+    });
+    this.bottom = [this.hotWin, this.slotGfx, ...this.slots.map(s => s.num), ...this.keyParts];
 
     this.refreshAll();
     this.events.on('map-changed', () => this.refreshMap());
@@ -122,8 +129,6 @@ export default class HUD extends Phaser.Scene {
   }
 
   setBottomVisible(v) {
-    if (this.hintsOn && this.state.d.playtime > 240) { this.hintsOn = false; this.tweens.add({ targets: this.hints, alpha: 0, duration: 800 }); }
-    if (this.hintsOn) for (const h of this.hints) { this.tweens.killTweensOf(h); this.tweens.add({ targets: h, alpha: v ? 1 : 0, duration: 150 }); }
     for (const o of [...this.bottom, ...this.slots.flatMap(s => [s.icon, s.count]).filter(Boolean), this.questWin, this.questTitle, this.questText]) {
       this.tweens.killTweensOf(o);
       this.tweens.add({ targets: o, alpha: v ? 1 : 0, duration: 150 });
@@ -135,7 +140,7 @@ export default class HUD extends Phaser.Scene {
 
   refreshHearts() {
     const hp = this.state.d.hp;
-    this.hearts.forEach((h, i) => { const v = hp - i * 2; h.setFrame(v >= 2 ? 0 : v === 1 ? 2 : 4); });
+    this.hearts.forEach((h, i) => { const v = hp - i * 2; h.setFrame(v >= 2 ? 4 : v === 1 ? 2 : 0); });
   }
 
   refreshClock() {
@@ -153,9 +158,9 @@ export default class HUD extends Phaser.Scene {
       sl.icon?.destroy(); sl.count?.destroy(); sl.icon = sl.count = null;
       const id = s.d.hotbar[i];
       if (!id || !s.count(id)) return;
-      sl.icon = itemIcon(this, sl.x + 12, sl.y + 13, id);
+      sl.icon = itemIcon(this, sl.x + 11, sl.y + 11, id);
       const n = s.count(id);
-      if (n > 1) sl.count = text(this, sl.x + 17, sl.y + 15, String(n), UI.select);
+      if (n > 1) sl.count = text(this, sl.x + 2, sl.y + 1, String(n), UI.select);
     });
   }
 
@@ -188,8 +193,13 @@ export default class HUD extends Phaser.Scene {
     if (!md) return;
     this.miniImg?.destroy();
     drawMiniMap(this, md, 'minimap');
+    const [mx, my, mw, mh] = L.mini;
     this.miniImg = this.add.image(0, 0, 'minimap').setOrigin(0);
-    this.miniImg.setMask(this.miniMaskG.createGeometryMask());
+    const iw = mw - 8, ih = mh - 8;
+    if (md.w * MINI_PX > iw || md.h * MINI_PX > ih) this.miniImg.setCrop(0, 0, iw, ih);
+    this.miniNight?.destroy();
+    this.miniNight = this.add.rectangle(mx + 4, my + 4, iw, ih, 0xffffff).setOrigin(0).setBlendMode(Phaser.BlendModes.MULTIPLY);
+    this.children.bringToTop(this.miniNight);
     this.children.bringToTop(this.miniDots);
     this.updateMiniDots();
   }
@@ -201,10 +211,15 @@ export default class HUD extends Phaser.Scene {
     const [mx, my, mw, mh] = L.mini;
     const iw = mw - 8, ih = mh - 8;
     const px = (w.player.x / TILE) * MINI_PX, py = (w.player.y / TILE) * MINI_PX;
-    const ox = Phaser.Math.Clamp(Math.round(px - iw / 2), 0, Math.max(0, md.w * MINI_PX - iw));
-    const oy = Phaser.Math.Clamp(Math.round(py - ih / 2), 0, Math.max(0, md.h * MINI_PX - ih));
-    this.miniImg.setPosition(mx + 4 - ox, my + 4 - oy);
+    const cx = Math.max(0, Math.floor((iw - md.w * MINI_PX) / 2)), cy = Math.max(0, Math.floor((ih - md.h * MINI_PX) / 2));
+    const ox = Phaser.Math.Clamp(Math.round(px - iw / 2), 0, Math.max(0, md.w * MINI_PX - iw)) - cx;
+    const oy = Phaser.Math.Clamp(Math.round(py - ih / 2), 0, Math.max(0, md.h * MINI_PX - ih)) - cy;
+    if (this.miniImg.isCropped) { this.miniImg.setCrop(ox + cx, oy + cy, iw, ih); this.miniImg.setPosition(mx + 4 - ox - cx, my + 4 - oy - cy); }
+    else this.miniImg.setPosition(mx + 4 - ox, my + 4 - oy);
+    if (this.miniNight) this.miniNight.fillColor = w.night?.fillColor ?? 0xffffff;
     const g = this.miniDots.clear();
+    const cam = w.cameras.main;
+    g.lineStyle(1, 0xffffff, 0.5).strokeRect(mx + 4 - ox + Math.round(cam.scrollX / TILE * MINI_PX) + 0.5, my + 4 - oy + Math.round(cam.scrollY / TILE * MINI_PX) + 0.5, Math.round(cam.width / TILE * MINI_PX), Math.round(cam.height / TILE * MINI_PX));
     for (const n of w.npcs ?? []) {
       const x = mx + 4 - ox + Math.round((n.x / TILE) * MINI_PX), y = my + 4 - oy + Math.round((n.y / TILE) * MINI_PX);
       if (x < mx + 4 || y < my + 4 || x > mx + mw - 6 || y > my + mh - 6) continue;
@@ -233,7 +248,7 @@ export default class HUD extends Phaser.Scene {
     const win = new Window(this, x, y, w, h);
     let icon;
     if (t.item) icon = itemIcon(this, x + 14, y + 12, t.item);
-    else if (t.icon === 'gold') icon = this.add.image(x + 14, y + 12, 'it_goldcoin');
+    else if (t.icon === 'gold') icon = this.add.image(x + 14, y + 12, 'coin', 0);
     else icon = this.add.image(x + 14, y + 12, 'emote' + (EMOTES[{ quest: 'alert', moth: 'sleep', item: 'surprise' }[t.icon] ?? t.icon] ?? EMOTES.star));
     let str = t.text;
     const tx = text(this, x + 26, y + 8, str, t.icon === 'heart' ? 0xffc2cc : t.icon === 'heartbreak' ? 0xc0c4d8 : UI.text);

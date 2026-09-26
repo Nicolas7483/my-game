@@ -15,7 +15,7 @@ export const MAPS = { town, meadow };
 const DIRS = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
 
 // Sky tint over a day (multiply blend). Hours -> colour.
-const SKY = [[0, 0x363f78], [4.5, 0x363f78], [6, 0xcdb6d6], [7.5, 0xffffff], [16.5, 0xffffff], [18, 0xffd2a0], [19.5, 0x8c7fb8], [21, 0x363f78], [24, 0x363f78]];
+const SKY = [[0, 0x363f78], [4.5, 0x363f78], [6, 0xcdb6d6], [7.5, 0xffffff], [16, 0xffffff], [17.5, 0xffcf9a], [19, 0xb08ab0], [20.5, 0x4a4a88], [21.5, 0x363f78], [24, 0x363f78]];
 function skyAt(h) {
   h = ((h % 24) + 24) % 24;
   for (let i = 0; i < SKY.length - 1; i++) {
@@ -32,7 +32,7 @@ function skyAt(h) {
 export function darkness(h) {
   h = ((h % 24) + 24) % 24;
   if (h >= 21 || h < 4.5) return 1;
-  if (h >= 18) return (h - 18) / 3;
+  if (h >= 17.5) return Math.min(1, (h - 17.5) / 3.5);
   if (h < 7) return 1 - (h - 4.5) / 2.5;
   return 0;
 }
@@ -118,6 +118,7 @@ export default class World extends Phaser.Scene {
     // Water shimmer: a few animated ripples on open water.
     const r = rng(5);
     for (const [x, y] of this.md.water) {
+      if (this.md.surface[y * this.md.w + x] === 'wood') continue;
       if (r() < 0.12) {
         const s = this.add.sprite(x * TILE + 8, y * TILE + 8, 'ripples').setDepth(DEPTH.overlay).setAlpha(0.8);
         s.play({ key: 'ripples', startFrame: Math.floor(r() * 4) });
@@ -135,7 +136,7 @@ export default class World extends Phaser.Scene {
       const tex = this.textures.get(key);
       if (!tex.has(frameName)) tex.add(frameName, 0, pf.c * TILE, pf.r * TILE, pf.w * TILE, pf.h * TILE);
       const img = this.add.image(pr.x * TILE, pr.y * TILE, key, frameName).setOrigin(0, 0);
-      img.setDepth(DEPTH.world + (pr.y + pf.h) * TILE - 1);
+      img.setDepth(pf.floor ? DEPTH.deco + 0.5 : DEPTH.world + (pr.y + pf.h) * TILE - 1);
       pr.img = img;
       this.props.push(pr);
       for (const [lx, ly] of pf.glow ?? []) this.addLight(pr.x * TILE + lx, pr.y * TILE + ly, 'glow', 0.9);
@@ -212,7 +213,7 @@ export default class World extends Phaser.Scene {
     else { const st = this.md.spots.start; x = st[0] * TILE + 8; y = st[1] * TILE + 12; }
     this.player = this.makeActor('c_hunter', x, y);
     this.face(this.player, s.facing || 'down');
-    this.lantern = this.addLight(x, y - 8, 'glow_big', 0.9);
+    this.lantern = this.addLight(x, y - 8, 'glow_big', 0.75);
     this.lantern.isLantern = true;
     this.stepTimer = 0; this.stepIdx = 0;
     this.companion = null;

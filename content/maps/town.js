@@ -20,6 +20,7 @@ export default {
     p.blob(T.WATER, 41, 9.5, 6, 2.5, 0.3, 5);
     p.rect(T.WATER, 48, 7, 9, 36);
     p.blob(T.WATER, 47, 33, 3, 6, 0.4, 9);
+    for (let y = 12; y < 44; y += 3) p.blob(T.WATER, 47.2 + r() * 1.6, y + r() * 2, 1.6 + r() * 1.4, 2 + r(), 0.2, y);
     // Paths: bridge to plaza, plaza to inn, workshop, cottage, yard, dock.
     p.blob(T.DIRT, 27.5, 23.5, 5.2, 3, 0.2, 4);
     p.path(T.DIRT, [[27, 12], [27, 22]]);
@@ -39,7 +40,7 @@ export default {
     const bridge = fixed
       ? [{ x: 27, y: 5, w: 2, h: 8, tint: state.has('bridge_flimsy') ? 0xb09a88 : undefined }]
       : [{ x: 27, y: 5, w: 2, h: 3, broken: [[0, 2], [1, 2]] }, { x: 27, y: 11, w: 2, h: 2, broken: [[0, 0], [1, 0]] }];
-    return [...bridge, { x: 45, y: 24, w: 8, h: 2 }, { x: 51, y: 22, w: 2, h: 2 }];
+    return [...bridge, { x: 45, y: 24, w: 8, h: 2, tint: 0xe2c0a0 }];
   },
 
   props(state) {
@@ -55,8 +56,8 @@ export default {
       ['bigtree', 4, 39], ['tree', 9, 39], ['oak_pink', 12, 38], ['pine', 16, 39], ['tree_round', 19, 39], ['bigtree_lime', 30, 39],
       ['tree', 35, 40], ['pine', 38, 39], ['tree_pink', 41, 40], ['tree', 21, 40],
       // the inn (west)
-      ['house_orange', 6, 15, { id: 'inn', examine: 'inn_sign' }],
-      ['barrel', 10, 16], ['crates', 7, 14, { id: 'crates', dialogue: 'crates' }], ['crate', 8, 14], ['barrel_open', 5, 15],
+      ['inn', 6, 13, { id: 'inn', examine: 'inn_sign' }],
+      ['barrel', 10, 15], ['crates', 11, 16, { id: 'crates', dialogue: 'crates' }], ['crate', 12, 16], ['barrel_open', 5, 16],
       ['lamp', 10, 17, { examine: 'lamp_post' }], ['table_long', 11, 19, { id: 'bench', examine: 'bench' }],
       // garden
       ['fence_h', 1, 20], ['fence_h', 1, 26], ['bush_round', 5, 20], ['tree_pink', 2, 22, { examine: 'flowerbed' }],
@@ -64,33 +65,33 @@ export default {
       ['house_red', 38, 15, { id: 'workshop', examine: 'workshop_window' }], ['lamp', 42, 17, { examine: 'lamp_post' }],
       ['goods_crates', 42, 15], ['pot', 37, 17],
       // plaza
-      ['well', 27, 22, { id: 'well', examine: 'well' }], ['signpost', 31, 21, { id: 'notice_board', examine: 'notice_board' }],
-      ['lamp', 22, 21, { examine: 'lamp_post' }], ['lamp', 33, 21, { examine: 'lamp_post' }], ['tree_pink', 20, 26], ['tree_pink', 33, 26],
+      ['well', 32, 25, { id: 'well', examine: 'well' }], ['signpost', 24, 21, { id: 'notice_board', examine: 'notice_board' }], ['statue', 30, 20, { examine: 'statue' }],
+      ['lamp', 22, 21, { examine: 'lamp_post' }], ['lamp', 33, 21, { examine: 'lamp_post' }], ['tree_round', 20, 26], ['tree_round', 34, 26],
       ['bush', 23, 20], ['bush', 32, 20],
       // Coral's stall
       ['tent', 18, 19, { id: 'stall_tent', examine: 'barrels' }], ['market_goods', 17, 21, { id: 'stall_goods', examine: 'barrels', solid: 1 }],
       ['barrels', 14, 19, { examine: 'barrels' }],
       // Nettie's and Hobb's houses
-      ['house_beige', 13, 26, { examine: 'mailbox' }], ['mailbox', 17, 28, { examine: 'mailbox' }],
-      ['house_orange2', 3, 28, { examine: 'mill' }], ['logs_upright', 10, 30, { examine: 'barrels' }], ['planks_long', 3, 33],
-      ['planks', 10, 33], ['stump', 5, 35], ['cart', 11, 35],
+      ['hut', 13, 26, { examine: 'mailbox' }], ['signpost', 17, 29, { examine: 'mailbox' }],
+      ['house_orange2', 3, 28, { examine: 'mill' }], ['crates2', 10, 30, { examine: 'barrels' }], ['planks_long', 3, 33],
+      ['planks', 10, 33], ['stump', 5, 35], ['cart', 9, 35],
       // Gil's house near the dock
       ['house_wood', 41, 26, { examine: 'fishnet' }], ['barrel', 44, 27], ['pot', 40, 28],
       // Nan Wren's cottage (south)
       ['house_round', 24, 33, { id: 'wren_house', examine: 'mailbox' }], ['bush_round', 23, 35], ['berrybush', 28, 33],
       // shrine
       ['statue_orb', 35, 29, { id: 'shrine', examine: 'shrine' }], ['stone_lantern', 34, 30, { examine: 'shrine' }], ['stone_lantern', 38, 30, { examine: 'shrine' }],
-      ['torii', 35, 32, { examine: 'shrine' }], ['tree_pink', 32, 31], ['tree_pink', 40, 31],
+      ['torii', 35, 32, { examine: 'shrine' }], ['oak_pink', 30, 30], ['oak_pink', 39, 30],
       // east coast and beach
-      ['boulder', 44, 36], ['rock', 44, 31],
+      ['boulder', 43, 37],
       ['tree_round', 23, 29], ['tree', 16, 33], ['oak_autumn', 12, 12], ['tree', 36, 12],
       // more homes
       ['house_green', 16, 14, { examine: 'mailbox' }], ['shop_blue', 22, 14, { examine: 'notice_board' }], ['house_orange2', 31, 14],
       ['house_wood', 44, 19, { examine: 'fishnet' }], ['house_red', 18, 29], ['barrel', 21, 32], ['lamp', 25, 17, { examine: 'lamp_post' }],
-      ['fence_h', 12, 31], ['fence_h', 12, 36], ['bush', 16, 36], ['tree_lime', 2, 36], ['boulder_grey', 7, 37],
+      ['bush', 16, 36], ['tree_lime', 2, 36], ['boulder_grey', 7, 37],
       ['tree_pink', 14, 21], ['bush_round', 36, 21], ['tree', 43, 13], ['bush', 30, 17], ['banner_red', 26, 20], ['banner_green', 30, 20],
-      ['berrybush_orange', 42, 35], ['tree_round', 38, 36], ['bush', 33, 37],
-      ['statue', 29, 27, { examine: 'statue' }],
+      ['berrybush_orange', 42, 35], ['tree_round', 38, 36],
+      ['field', 30, 36, { examine: 'haystack' }], ['sprout', 31, 37], ['sprout', 30, 38], ['sprout', 32, 37], ['scarecrow', 34, 37, { examine: 'haystack' }], ['sign_fruit', 16, 22, { examine: 'barrels' }],
     ];
     if (state.has('stall_fixed')) P.push(['lamp', 21, 19, { examine: 'lamp_post' }]);
     if (state.has('garden_bloom')) P.push(['berrybush_orange', 5, 23]);
