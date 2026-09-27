@@ -220,6 +220,7 @@ export default class HUD extends Phaser.Scene {
     if (md.w * MINI_PX > iw || md.h * MINI_PX > ih) this.miniImg.setCrop(0, 0, iw, ih);
     this.miniNight?.destroy();
     this.miniNight = this.add.rectangle(mx + 4, my + 4, iw, ih, 0xffffff).setOrigin(0).setBlendMode(Phaser.BlendModes.MULTIPLY);
+    for (const o of [this.miniWin, this.miniImg, this.miniNight, this.miniDots]) o.setVisible(!md.interior);
     this.children.bringToTop(this.miniNight);
     this.children.bringToTop(this.miniDots);
     this.updateMiniDots();

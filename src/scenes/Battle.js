@@ -54,23 +54,25 @@ export default class Battle extends Phaser.Scene {
       if (kind === 'nest') t.setTint(0x8a7ea8);
     }
     const trees = kind === 'town' ? ['house_orange', 'tree_pink', 'house_red', 'tree', 'house_round', 'pine', 'house_wood'] : kind === 'nest' ? ['tree_bare', 'tree_bare', 'pine', 'tree_bare', 'tree_bare', 'pine', 'tree_bare', 'tree_bare'] : ['tree', 'pine', 'tree_round', 'bigtree_lime', 'pine', 'tree', 'tree_round', 'pine'];
-    let x = -6;
     const PF = PREFABS;
-    for (const n of trees) {
-      const pf = PF[n];
-      const key = 't_' + pf.sheet, fr = `${pf.c},${pf.r},${pf.w},${pf.h}`;
-      const tex = this.textures.get(key);
-      if (!tex.has(fr)) tex.add(fr, 0, pf.c * 16, pf.r * 16, pf.w * 16, pf.h * 16);
-      const img = this.add.image(x, 112, key, fr).setOrigin(0, 1);
-      if (kind === 'nest') img.setTint(0x7a6c98);
-      x += img.width + 2;
-      if (x > WIDTH) break;
-    }
+    const row = (y, offset, tint, alpha) => {
+      let x = offset;
+      for (let i = 0; x < WIDTH; i++) {
+        const pf = PF[trees[(i + (offset ? 3 : 0)) % trees.length]];
+        const key = 't_' + pf.sheet, fr = `${pf.c},${pf.r},${pf.w},${pf.h}`;
+        const tex = this.textures.get(key);
+        if (!tex.has(fr)) tex.add(fr, 0, pf.c * 16, pf.r * 16, pf.w * 16, pf.h * 16);
+        const img = this.add.image(x, y, key, fr).setOrigin(0, 1).setAlpha(alpha);
+        if (tint) img.setTint(tint);
+        x += img.width + 2;
+      }
+    };
+    row(104, -20, kind === 'nest' ? 0x544a70 : 0x7fa0c0, 0.8);
+    row(112, -6, kind === 'nest' ? 0x7a6c98 : null, 1);
     if (kind === 'nest') {
       this.add.particles(0, 0, 'px', { x: { min: 0, max: WIDTH }, y: { min: 20, max: 180 }, lifespan: 3000, speed: { min: 4, max: 12 }, alpha: { start: 0.6, end: 0 }, tint: 0xb8a8e8, frequency: 120 });
     }
-    // light vignette at the bottom so the panels read well
-    this.add.rectangle(0, 176, WIDTH, 16, 0x0a0c20, 0.25).setOrigin(0);
+    this.add.rectangle(0, 192, WIDTH, 78, 0x0a0c20, 1).setOrigin(0);
   }
 
   makeSprite(spriteDef, x, y, tint, facing, desat = 0) {
@@ -99,9 +101,10 @@ export default class Battle extends Phaser.Scene {
   spawnEnemies() {
     this.enemies = [];
     const list = this.def.enemies;
-    const slots = [[100, 158], [60, 132], [60, 184], [150, 132], [150, 184]];
     const bossIdx = list.findIndex(e => ENEMIES[e].boss);
-    list.forEach((id, i) => this.addEnemy(id, bossIdx >= 0 && i === bossIdx ? [100, 168] : slots[i] ?? slots[0]));
+    const slots = bossIdx >= 0 ? [[184, 140], [184, 176], [40, 150], [150, 120]] : [[120, 160], [80, 140], [80, 176], [160, 140], [160, 176]];
+    let k = 0;
+    list.forEach((id, i) => this.addEnemy(id, i === bossIdx ? [104, 172] : slots[k++] ?? slots[0]));
   }
 
   addEnemy(id, pos) {
@@ -118,7 +121,7 @@ export default class Battle extends Phaser.Scene {
   spawnParty() {
     this.party = this.state.d.members.map((id, i) => {
       const p = this.state.member(id), s = this.state.stats(id);
-      const x = 380 + i * 20, y = 132 + i * 34;
+      const x = 392 + i * 16, y = 140 + i * 32;
       const spr = this.makeSprite('c:' + PARTY[id].sprite, x, y, null, 'left');
       spr.setDepth(y);
       return { side: 'party', id, name: PARTY[id].name, get hp() { return p.hp; }, set hp(v) { p.hp = v; }, get lp() { return p.lp; }, set lp(v) { p.lp = v; }, maxHp: s.maxHp, maxLp: s.maxLp, atk: s.atk, def: s.def, spd: s.spd, spr, x, y, defending: false, get alive() { return p.hp > 0; } };
@@ -204,12 +207,13 @@ export default class Battle extends Phaser.Scene {
       const t = opts[p.sel]?.target;
       if (t) {
         const cur = this.add.graphics().fillStyle(UI.select, 1);
-        const cx = t.x + (t.side === 'enemy' ? 26 : -22), cy = t.y - 20;
+        const half = t.spr.displayWidth / 2 + 6;
+        const cx = t.x + (t.side === 'enemy' ? half : -half), cy = t.y - t.spr.displayHeight / 2;
+        t.spr.setAlpha(0.65); this.time.delayedCall(140, () => t.spr.setAlpha(1));
         if (t.side === 'enemy') cur.fillTriangle(cx, cy, cx + 7, cy - 5, cx + 7, cy + 5); else cur.fillTriangle(cx, cy, cx - 7, cy - 5, cx - 7, cy + 5);
         this.menuLayer.add(cur);
         this.tweens.add({ targets: cur, x: t.side === 'enemy' ? 3 : -3, yoyo: true, repeat: -1, duration: 250 });
-        const hint = text(this, 16, PANEL.y - 12, `Target: ${t.name}${t.side === 'enemy' ? `  (${Math.max(0, t.hp)}/${t.maxHp})` : ''}`, UI.select);
-        this.menuLayer.add(hint);
+        this.tag(`Target: ${t.name}${t.side === 'enemy' ? `  (${Math.max(0, t.hp)}/${t.maxHp})` : ''}`);
       }
       return;
     }
@@ -227,7 +231,7 @@ export default class Battle extends Phaser.Scene {
       const col = p.sel % 2, row = Math.floor(p.sel / 2);
       const cur = this.add.graphics().fillStyle(UI.select, 1).fillTriangle(18 + col * 76, y + 10 + row * 18, 18 + col * 76, y + 18 + row * 18, 23 + col * 76, y + 14 + row * 18);
       this.menuLayer.add(cur);
-      this.menuLayer.add(text(this, 16, y - 12, `${p.actor.name}'s turn`, UI.select));
+      this.tag(`${p.actor.name}'s turn`);
     } else {
       if (!opts.length) this.menuLayer.add(text(this, 24, y + 8, p.stage === 'item' ? 'No usable items.' : 'No skills.', UI.dim));
       opts.forEach((o, i) => {
@@ -236,8 +240,15 @@ export default class Battle extends Phaser.Scene {
         if (o.right) this.menuLayer.add(text(this, 150, y + 7 + i * 11, o.right, UI.dim));
       });
       const d = opts[p.sel]?.desc;
-      if (d) this.menuLayer.add(text(this, 16, y - 12, d, UI.select));
+      if (d) this.tag(d, y - 16);
     }
+  }
+
+  // Small name-tag window for turn, target and skill hints.
+  tag(str, y = 8) {
+    const w = new Window(this, 8, y, 216, 16);
+    this.menuLayer.add(w);
+    this.menuLayer.add(text(this, 16, y + 3, str, UI.select));
   }
 
   onKey(e) {
@@ -306,14 +317,19 @@ export default class Battle extends Phaser.Scene {
   }
 
   popNumber(t, str, color) {
-    const n = text(this, t.x - 6, t.y - 40, str, color).setDepth(200).setScale(1);
-    const sh = text(this, t.x - 5, t.y - 39, str, 0x0a0c20).setDepth(199);
-    this.tweens.add({ targets: [n, sh], y: '-=14', alpha: { from: 1, to: 0 }, delay: 350, duration: 600, onComplete: () => { n.destroy(); sh.destroy(); } });
+    const y = t.y - t.spr.displayHeight - 4;
+    const c = this.add.container(0, 0).setDepth(200);
+    for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) c.add(text(this, dx, dy, str, 0x0a0c20).setScale(2));
+    const n = text(this, 0, 0, str, color).setScale(2);
+    c.add(n);
+    c.setPosition(Math.round(t.x - n.width / 2), y);
+    this.tweens.add({ targets: c, y: y - 8, duration: 140, ease: 'Quad.out', yoyo: false, onComplete: () => this.tweens.add({ targets: c, y: y - 4, duration: 120 }) });
+    this.tweens.add({ targets: c, alpha: 0, delay: 700, duration: 350, onComplete: () => c.destroy() });
   }
 
   hit(t, amount) {
     t.hp = Math.max(0, t.hp - amount);
-    this.popNumber(t, String(amount), UI.text);
+    this.popNumber(t, String(amount), amount >= 14 ? UI.gold : UI.text);
     t.spr.setTintFill(0xffffff);
     this.time.delayedCall(90, () => { t.spr.clearTint(); if (t.spr.baseTint) t.spr.setTint(t.spr.baseTint); });
     this.tweens.add({ targets: t.spr, x: t.x + (t.side === 'enemy' ? -4 : 4), yoyo: true, repeat: 1, duration: 50 });
@@ -338,7 +354,7 @@ export default class Battle extends Phaser.Scene {
       this.tweens.killTweensOf(t.spr);
       this.tweens.add({ targets: t.spr, alpha: 0, scaleY: 0.2, duration: 400 });
     } else {
-      t.spr.anims.stop(); t.spr.setAngle(90).setAlpha(0.6);
+      t.spr.anims.stop(); t.spr.setOrigin(0.5, 0.5).setY(t.y - 8).setAngle(90).setTint(0x8088aa).setAlpha(0.8);
     }
   }
 
@@ -402,7 +418,7 @@ export default class Battle extends Phaser.Scene {
     if (move?.summon) {
       if (this.enemies.filter(x => x.alive).length < 4) {
         await this.say(`${e.name} calls ${move.text}`, 900);
-        const free = [[60, 132], [60, 184], [150, 132], [150, 184]].find(p => !this.enemies.some(x => x.alive && x.x === p[0] && x.y === p[1]));
+        const free = [[184, 140], [184, 176], [40, 150], [150, 120]].find(p => !this.enemies.some(x => x.alive && x.x === p[0] && x.y === p[1]));
         if (free) { const n = this.addEnemy(move.summon, free); n.spr.setAlpha(0); this.tweens.add({ targets: n.spr, alpha: 1, duration: 300 }); this.refreshPanels(); }
         return;
       }
@@ -427,6 +443,7 @@ export default class Battle extends Phaser.Scene {
   async win(talked = false) {
     if (this.over) return;
     this.over = true;
+    this.pending = null; this.menuLayer.removeAll(true);
     const foes = this.enemies;
     const xp = talked ? Math.round(foes.reduce((s, e) => s + e.info.xp, 0) / 2) : foes.reduce((s, e) => s + e.info.xp, 0);
     const gold = talked ? 0 : foes.reduce((s, e) => s + e.info.gold, 0);
@@ -437,19 +454,22 @@ export default class Battle extends Phaser.Scene {
     this.refreshPanels();
     const lines = [talked ? 'Peace, for now.' : 'Victory!', `+${xp} XP${gold ? `   +${gold} gold` : ''}`, ...ups.map(u => `${PARTY[u.id].name} reached level ${u.lvl}!`)];
     if (ups.length) this.game.audioManager.sfx('levelup', { volume: 0.7 });
-    const h = Math.ceil((lines.length * 12 + 20) / 8) * 8;
-    const win = new Window(this, 144, 56, 192, h).setDepth(300);
-    lines.forEach((l, i) => text(this, 160, 66 + i * 12, l, i === 0 ? UI.gold : UI.text).setDepth(301));
+    const h = Math.ceil((lines.length * 12 + 32) / 8) * 8;
+    new Window(this, 144, 48, 192, h).setDepth(300);
+    lines.forEach((l, i) => text(this, 160, 58 + i * 12, l, i === 0 ? UI.gold : UI.text).setDepth(301));
+    this.victoryH = h;
     for (const m of this.party) if (m.alive) this.tweens.add({ targets: m.spr, y: m.y - 6, yoyo: true, repeat: 2, duration: 150 });
     await wait(this, 600);
     this.result = talked ? 'talked' : 'won';
     this.canLeave = true;
-    text(this, 160, 56 + h - 14, 'Press Space', UI.dim).setDepth(301);
+    const tri = this.add.graphics().setDepth(301).fillStyle(UI.select, 1).fillTriangle(144 + 192 - 18, 48 + h - 12, 144 + 192 - 10, 48 + h - 12, 144 + 192 - 14, 48 + h - 8);
+    this.tweens.add({ targets: tri, y: 2, yoyo: true, repeat: -1, duration: 350 });
   }
 
   async lose() {
     if (this.over) return;
     this.over = true;
+    this.pending = null; this.menuLayer.removeAll(true);
     this.game.audioManager.sfx('jingle_gameover', { volume: 0.7 });
     const win = new Window(this, 104, 64, 272, 48).setDepth(300);
     void win;

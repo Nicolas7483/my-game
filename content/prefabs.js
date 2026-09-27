@@ -120,8 +120,6 @@ export const PREFABS = {
   i_bed_red: { sheet: 'bed', c: 5, r: 3, w: 1, h: 2, solid: 2 },
   i_bed_blue: { sheet: 'bed', c: 12, r: 3, w: 1, h: 2, solid: 2 },
   i_bed_double: { sheet: 'bed', c: 0, r: 0, w: 2, h: 3, solid: 3 },
-  i_rug: { sheet: 'bed', c: 2, r: 6, w: 3, h: 2, solid: 0, floor: true },
-  i_rug_small: { sheet: 'bed', c: 0, r: 6, w: 2, h: 3, solid: 0, floor: true },
   // river road camp
   tent_camp: { sheet: 'camp', c: 4, r: 0, w: 3, h: 3, solid: 2, door: 1 },
   tent_camp2: { sheet: 'camp', c: 7, r: 0, w: 3, h: 3, solid: 2 },

@@ -10,10 +10,14 @@ export default {
 
   paint(p) {
     const r = rng(77);
-    p.rect(T.WATER, 26, 0, 5, 31);
+    p.rect(T.WATER, 24, 0, 5, 9);
+    p.rect(T.WATER, 25, 8, 5, 4);
+    p.rect(T.WATER, 26, 11, 5, 9);
+    p.rect(T.WATER, 27, 19, 5, 12);
     for (let y = -2; y < 32; y += 3) {
-      p.blob(T.WATER, 26 + r() * 1.2, y + r() * 2, 1.8 + r(), 2 + r(), 0.2, y + 3);
-      p.blob(T.WATER, 30.5 + r() * 1.2, y + 1 + r() * 2, 1.8 + r(), 2 + r(), 0.2, y + 9);
+      const off = y < 9 ? -2 : y > 19 ? 1 : 0;
+      p.blob(T.WATER, 26 + off + r() * 1.2, y + r() * 2, 1.8 + r(), 2 + r(), 0.2, y + 3);
+      p.blob(T.WATER, 30.5 + off + r() * 1.2, y + 1 + r() * 2, 1.8 + r(), 2 + r(), 0.2, y + 9);
     }
     p.path(T.DIRT, [[0, 15], [25, 15]]);
     p.path(T.DIRT, [[32, 15], [48, 15]]);
@@ -39,7 +43,11 @@ export default {
       ['lamp', 12, 13, { examine: 'lamp_post' }], ['cart', 4, 12, { examine: 'camp_wagon' }],
       // dead grove + nest
       ['tree_bare', 34, 4], ['tree_bare', 37, 3], ['tree_bare', 40, 4], ['tree_bare', 35, 7], ['tree_bare', 41, 7], ['tree_bare', 43, 9],
-      ['stump', 33, 10], ['boulder_grey', 42, 11],
+      ['stump', 33, 10], ['boulder_grey', 42, 11], ['tent_ruined', 37, 5, { tint: 0x6a5a88, examine: 'dead_tree' }],
+      // bridge posts
+      ['fence_post', 24, 13], ['fence_post', 33, 13], ['fence_post', 24, 16], ['fence_post', 33, 16],
+      // border fill
+      ['pine', 11, 0], ['tree_round', 14, 0], ['pine', 17, 0], ['pine', 29, 0], ['tree_round', 40, 0], ['pine', 46, 8], ['tree_round', 46, 18], ['pine', 46, 22],
       // ruined shrine
       ['statue_monk', 39, 22, { id: 'shrine_old', dialogue: 'shrine_old', reach: { flag: 'ford_open' } }], ['stone_lantern', 37, 23, { examine: 'shrine' }], ['pillar', 42, 21],
       ['tent_ruined', 34, 19],

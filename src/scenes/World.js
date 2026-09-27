@@ -153,6 +153,7 @@ export default class World extends Phaser.Scene {
       if (!tex.has(frameName)) tex.add(frameName, 0, pf.c * TILE, pf.r * TILE, pf.w * TILE, pf.h * TILE);
       const img = this.add.image(pr.x * TILE, pr.y * TILE, key, frameName).setOrigin(0, 0);
       img.setDepth(pf.floor ? DEPTH.deco + 0.5 : DEPTH.world + (pr.y + pf.h) * TILE - 1);
+      if (pr.tint) img.setTint(pr.tint);
       pr.img = img;
       this.props.push(pr);
       for (const [lx, ly] of pf.glow ?? []) this.addLight(pr.x * TILE + lx, pr.y * TILE + ly, 'glow', 0.9);

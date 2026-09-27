@@ -16,11 +16,11 @@ export default class ChapterCard extends Phaser.Scene {
     const t1 = text(this, 0, 100, a.toUpperCase(), UI.dim);
     t1.setX(Math.round((WIDTH - t1.width) / 2));
     const t2 = text(this, 0, 116, b, UI.gold).setScale(2);
-    t2.setX(Math.round((WIDTH - t2.width * 2) / 2));
-    const line = this.add.rectangle(WIDTH / 2, 144, 0, 1, UI.gold).setOrigin(0.5);
+    t2.setX(Math.round((WIDTH - t2.width) / 2));
+    const line = this.add.rectangle(WIDTH / 2, 144, 160, 1, UI.gold).setOrigin(0.5).setScale(0, 1);
     [t1, t2].forEach(t => t.setAlpha(0));
     this.tweens.add({ targets: [t1, t2], alpha: 1, duration: 900 });
-    this.tweens.add({ targets: line, width: 160, duration: 900, delay: 300 });
+    this.tweens.add({ targets: line, scaleX: 1, duration: 900, delay: 300 });
     this.game.audioManager.sfx('secret', { volume: 0.7 });
     this.time.delayedCall(3200, () => {
       this.tweens.add({ targets: [bg, t1, t2, line], alpha: 0, duration: 700, onComplete: () => {

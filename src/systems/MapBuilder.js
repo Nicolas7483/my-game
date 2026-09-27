@@ -74,7 +74,7 @@ function buildInterior(def, state) {
   const b = WALL_STYLES[it.wall ?? 'orange'];
   const door = rx + (it.door ?? Math.floor(rw / 2));
   for (let y = ry; y < ry + rh; y++) for (let x = rx; x < rx + rw; x++) {
-    const floor = it.floor[Math.floor(r() * it.floor.length)];
+    const floor = it.pattern ? it.floor[((x & 1) + (y & 1) * 2) % it.floor.length] : it.floor[Math.floor(r() * it.floor.length)];
     layers.ground[y][x] = { sheet: 'ifloor', i: floor };
     const top = y === ry, bot = y === ry + rh - 1, left = x === rx, right = x === rx + rw - 1;
     let wi = null;
@@ -86,7 +86,13 @@ function buildInterior(def, state) {
     if (wi !== null) layers.overlay[y][x] = { sheet: 'wall', i: wi };
     else { blocked[y * w + x] = 0; surface[y * w + x] = 'wood'; }
   }
-  // top wall is two tiles thick visually: the row under it is still walkable
+  // Rugs: a 9-slice from the framed tan tiles of the interior floor sheet.
+  const RUG = { nw: 16, n: 17, ne: 18, w: 38, c: 39, e: 40, sw: 60, s: 61, se: 62 };
+  for (const g of it.rugs ?? []) for (let j = 0; j < g.h; j++) for (let i = 0; i < g.w; i++) {
+    const col = i === 0 ? 'w' : i === g.w - 1 ? 'e' : 'c', row = j === 0 ? 'n' : j === g.h - 1 ? 's' : '';
+    const key = row ? (col === 'c' ? row : row + col) : col;
+    layers.terrain[g.y + j][g.x + i] = { sheet: 'ifloor', i: RUG[key] };
+  }
   const props = [];
   for (const [name, x, y, opts = {}] of def.props(state)) {
     const pf = PREFABS[name];
