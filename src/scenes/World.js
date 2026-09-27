@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE, SPEED, DEPTH, DAY_LENGTH, WIDTH, HEIGHT } from '../config.js';
+import { TILE, SPEED, DEPTH, DAY_HOURS_PER_SEC, NIGHT_SPEEDUP, WIDTH, HEIGHT } from '../config.js';
 import { SHEETS } from '../../content/prefabs.js';
 import { NPCS, EXAMINE, INTRO } from '../../content/story.js';
 import { FALLBACK } from '../../content/tileinfo.js';
@@ -237,7 +237,14 @@ export default class World extends Phaser.Scene {
     this.tweens.add({ targets: this.companion.spr, y: -3, yoyo: true, repeat: -1, duration: 700, ease: 'Sine.inOut' });
   }
 
+  // Which spawn rule each NPC uses right now; when it changes, NPCs walk to their new places.
+  spawnSignature() {
+    const list = Array.isArray(NPCS) ? NPCS : Object.values(NPCS);
+    return list.map(d => d.spawns?.findIndex(s => check(this.state, s.if))).join(',');
+  }
+
   spawnNpcs() {
+    this.spawnSig = this.spawnSignature();
     this.npcs = [];
     const list = Array.isArray(NPCS) ? NPCS : Object.values(NPCS);
     for (const def of list) {
@@ -325,6 +332,7 @@ export default class World extends Phaser.Scene {
     on('autosave', () => this.autosave(true));
     on('dialogue-closed', () => {
       this.busy = false;
+      if (this.spawnSignature() !== this.spawnSig) this.respawnNpcs();
       if (this.pendingEnding) { this.pendingEnding = false; this.busy = true; this.state.set('prologue_done'); this.autosave(); this.scene.launch('Ending'); }
     });
     on('menu-closed', () => { this.busy = false; });
@@ -400,7 +408,7 @@ export default class World extends Phaser.Scene {
     if (this.needsRebuild && !this.busy) { this.rebuild(); return; }
     if (this.pendingFade && !this.busy) { this.doFade(this.pendingFade); this.pendingFade = null; return; }
     if (!this.busy && !this.transitioning) {
-      this.state.d.hour += (24 / DAY_LENGTH) * dt;
+      this.state.d.hour += DAY_HOURS_PER_SEC * (this.state.isNight() ? NIGHT_SPEEDUP : 1) * dt;
       if (this.state.d.hour >= 24) { this.state.d.hour -= 24; this.state.d.day += 1; }
     }
     this.state.d.playtime += dt;
@@ -457,15 +465,14 @@ export default class World extends Phaser.Scene {
       if (!n.target) {
         n.wait -= delta;
         if (n.wait <= 0) {
-          const r = n.wander * TILE;
-          n.target = { x: n.home.x + (Math.random() * 2 - 1) * r, y: n.home.y + (Math.random() * 2 - 1) * r };
+          n.target = this.pickWanderTarget(n);
           n.wait = 1500 + Math.random() * 3000;
           n.stuck = 0;
         }
       } else {
         const dx = n.target.x - n.x, dy = n.target.y - n.y;
         const d = Math.hypot(dx, dy);
-        if (d < 1.5 || n.stuck > 0.6) { n.target = null; this.animate(n, n.facing, false); }
+        if (d < 1.5 || n.stuck > 0.15) { n.target = null; n.stuck = 0; this.animate(n, n.facing, false); }
         else {
           const sp = 30 * dt;
           const moved = this.moveActor(n, (dx / d) * sp, (dy / d) * sp);
@@ -476,6 +483,25 @@ export default class World extends Phaser.Scene {
       const nd = DEPTH.world + Math.round(n.y); if (n.depth !== nd) n.setDepth(nd);
       n.glow?.setPosition(n.x, n.y - 8);
     }
+  }
+
+  // Wander only to spots reachable in a straight, clear line, so NPCs never march into walls.
+  pickWanderTarget(n) {
+    const r = n.wander * TILE;
+    for (let tries = 0; tries < 8; tries++) {
+      const ax = Math.random() < 0.5; // move along one axis, like a real walker
+      const dist = (Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * r);
+      const tx = ax ? n.home.x + dist : n.home.x + (n.x - n.home.x);
+      const ty = ax ? n.y : n.home.y + dist;
+      const steps = Math.ceil(Math.hypot(tx - n.x, ty - n.y) / 4);
+      let clear = steps > 1;
+      for (let i = 1; i <= steps && clear; i++) {
+        const px = n.x + ((tx - n.x) * i) / steps, py = n.y + ((ty - n.y) * i) / steps;
+        if (!this.canStand(n, px, py)) clear = false;
+      }
+      if (clear) return { x: tx, y: ty };
+    }
+    return null;
   }
 
   updateCompanion(dt) {

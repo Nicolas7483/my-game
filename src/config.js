@@ -28,8 +28,10 @@ export const UI = {
 export const DEPTH = { ground: 0, terrain: 1, overlay: 2, deco: 3, world: 10, above: 100000, fx: 200000, night: 300000, light: 300001 };
 
 export const SPEED = 78; // px per second
-export const DAY_LENGTH = 16 * 60; // seconds of real time for a full day
-export const START_HOUR = 18; // the story starts at dusk
+// Daytime (5:30 to 20:00) lasts about 18 real minutes; nights pass faster (about 5 minutes).
+export const DAY_HOURS_PER_SEC = 14.5 / (18 * 60);
+export const NIGHT_SPEEDUP = 2.2;
+export const START_HOUR = 16.5; // the story starts in the golden afternoon
 
 export const MUSIC_VOLUME = 0.35;
 export const SFX_VOLUME = 0.5;

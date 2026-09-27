@@ -38,6 +38,7 @@ export const NPCS = [
   { id: 'sella', name: 'Sella', sprite: 'Woman', face: 'woman', dialogue: 'sella',
     spawns: [
       { if: { flag: 'inspector_here' }, map: 'town', spot: 'wren_porch', dx: 2 },
+      { if: { all: [ { flag: 'sella_ready' }, { notFlag: 'stall_fixed' } ] }, map: 'town', spot: 'stall', dx: 2 },
       { map: 'town', spot: 'workshop', wander: 1 },
     ] },
   { id: 'bram', name: 'Bram', sprite: 'Knight', face: 'knight', dialogue: 'bram',
@@ -72,7 +73,7 @@ export const QUESTS = {
   ] },
   stall: { title: 'Moths at the Stall', stages: [
     "Ask Sella about Coral's moth lantern.",
-    "Meet Sella at Coral's stall.",
+    "Sella waits at the stall. Talk to Coral.",
   ] },
   starlight: { title: 'A Jar of Starlight', stages: [
     'Find starlight in Tamblemeadow.',
@@ -379,6 +380,7 @@ DIALOGUES.sella = {
     { if: { all: [ { flag: 'inspector_here' }, { notFlag: 'walk_done' } ] }, node: 'nowalk' },
     { if: { flag: 'inspector_here' }, node: 'after' },
     { if: { notFlag: 'met_sella' }, node: 'meet' },
+    { if: { all: [ { flag: 'sella_ready' }, { notFlag: 'stall_fixed' } ] }, node: 'atstall' },
     { if: { all: [ { flag: 'stall_asked' }, { notFlag: 'sella_ready' }, { notFlag: 'stall_fixed' } ] },
       node: 'stall' },
     { if: { all: [ { flag: 'bridge_flimsy' }, { notFlag: 'sella_flimsy' } ] }, node: 'flimsy' },
@@ -428,6 +430,7 @@ DIALOGUES.sella = {
       ] },
     st_why: { text: "Mine flickers. Pride doesn't make light, sadly. I checked.", next: 'st2' },
     st_yes: { text: "Look at you, sharing. Meet me at Coral's stall, hero." },
+    atstall: { text: 'Lantern up, hero. Go on, talk to Coral. I will glare at the moths.', effects: [ { emote: ['sella', 'happy'] } ] },
     st_sly: { text: 'A warm fuzzy feeling? Ugh. Fine. Free wick trims. Stall. Now.' },
 
     // Carrying planks (romance beat)

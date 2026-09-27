@@ -13,8 +13,8 @@ const L = {
   toast: [144, 8, 192, 24],
   mini: [344, 8, 128, 96],
   quest: [344, 112, 128, 48],
-  hotbar: [168, 232, 144, 32],
-  keys: [320, 232, 88, 32],
+  hotbar: [120, 232, 144, 32],
+  keys: [272, 232, 88, 32],
 };
 const MINI_PX = 2; // minimap pixels per tile
 
@@ -126,6 +126,7 @@ export default class HUD extends Phaser.Scene {
     on('dialogue-open', () => this.setBottomVisible(false));
     on('dialogue-closed', () => this.setBottomVisible(true));
     this.time.addEvent({ delay: 250, loop: true, callback: () => this.refreshClock() });
+    this.time.addEvent({ delay: 100, loop: true, callback: () => this.fadeOverHero() });
   }
 
   setBottomVisible(v) {
@@ -134,6 +135,25 @@ export default class HUD extends Phaser.Scene {
       this.tweens.add({ targets: o, alpha: v ? 1 : 0, duration: 150 });
     }
     if (v) this.refreshQuest();
+  }
+
+  // Panels turn see-through when the hero walks under them, so the hero is never hidden.
+  fadeOverHero() {
+    const w = this.scene.get('World');
+    if (!w?.player || !w.sys.isActive()) return;
+    const cam = w.cameras.main;
+    const hx = w.player.x - cam.scrollX, hy = w.player.y - cam.scrollY;
+    const groups = [
+      [L.status, [this.statusWin, ...this.hearts, this.clockLabel, this.clockTime, this.coin, this.goldText, this.placeText]],
+      [L.mini, [this.miniWin, this.miniImg, this.miniNight, this.miniDots]],
+      [[L.quest[0], L.quest[1], L.quest[2], this.questWin.h], [this.questWin, this.questTitle, this.questText]],
+      [L.hotbar, [this.hotWin, this.slotGfx, ...this.slots.flatMap(s => [s.num, s.icon, s.count])]],
+      [L.keys, this.keyParts],
+    ];
+    for (const [[x, y, gw, gh], objs] of groups) {
+      const over = hx > x - 8 && hx < x + gw + 8 && hy > y - 2 && hy < y + gh + 22;
+      for (const o of objs) if (o && o.alpha > 0.05) o.setAlpha(over ? 0.3 : 1);
+    }
   }
 
   refreshAll() { this.refreshHearts(); this.refreshHotbar(); this.refreshQuest(); this.refreshClock(); this.refreshMap(); }
