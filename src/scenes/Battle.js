@@ -19,7 +19,7 @@ export default class Battle extends Phaser.Scene {
     this.state = this.registry.get('state');
     this.def = BATTLES[data.id];
     this.battleId = data.id;
-    this.over = false;
+    this.over = false; this.ended = false; this.canLeave = false; this.result = null; this.pending = null; this.current = null;
   }
 
   create() {
@@ -46,12 +46,14 @@ export default class Battle extends Phaser.Scene {
   // ------------------------------------------------------------------ scene art
   drawBackdrop(kind) {
     const g = this.add.graphics();
-    const sky = { road: [0x9ad0ff, 0xe9f4ff], town: [0xffc98f, 0xfff0d0], nest: [0x2a2340, 0x5a4a78] }[kind] ?? [0x9ad0ff, 0xe9f4ff];
+    const night = this.state.isNight() && kind !== 'nest';
+    this.nightTint = night ? 0x8a90c0 : null;
+    const sky = night ? [0x141a40, 0x3a3a70] : ({ road: [0x9ad0ff, 0xe9f4ff], town: [0xffc98f, 0xfff0d0], nest: [0x2a2340, 0x5a4a78] }[kind] ?? [0x9ad0ff, 0xe9f4ff]);
     g.fillGradientStyle(sky[0], sky[0], sky[1], sky[1], 1).fillRect(0, 0, WIDTH, 110);
     for (let y = 104; y < 192; y += 16) for (let x = 0; x < WIDTH; x += 16) {
       const frame = kind === 'town' && y > 150 && y < 175 ? 177 : 264 + ((x * 7 + y * 3) % 5 === 0 ? 1 + ((x + y) % 4) : 0);
       const t = this.add.image(x, y, 't_floor', frame).setOrigin(0);
-      if (kind === 'nest') t.setTint(0x8a7ea8);
+      if (kind === 'nest') t.setTint(0x8a7ea8); else if (this.nightTint) t.setTint(this.nightTint);
     }
     const trees = kind === 'town' ? ['house_orange', 'tree_pink', 'house_red', 'tree', 'house_round', 'pine', 'house_wood'] : kind === 'nest' ? ['tree_bare', 'tree_bare', 'pine', 'tree_bare', 'tree_bare', 'pine', 'tree_bare', 'tree_bare'] : ['tree', 'pine', 'tree_round', 'bigtree_lime', 'pine', 'tree', 'tree_round', 'pine'];
     const PF = PREFABS;
@@ -63,7 +65,7 @@ export default class Battle extends Phaser.Scene {
         const tex = this.textures.get(key);
         if (!tex.has(fr)) tex.add(fr, 0, pf.c * 16, pf.r * 16, pf.w * 16, pf.h * 16);
         const img = this.add.image(x, y, key, fr).setOrigin(0, 1).setAlpha(alpha);
-        if (tint) img.setTint(tint);
+        if (tint) img.setTint(tint); else if (this.nightTint) img.setTint(this.nightTint);
         x += img.width + 2;
       }
     };
@@ -151,6 +153,7 @@ export default class Battle extends Phaser.Scene {
   // ------------------------------------------------------------------ flow
   async run() {
     await this.say(this.def.intro ?? 'Enemies appear!', 1200);
+    if (this.def.tip && this.state.d.members.includes('sella')) await this.say(this.def.tip, 1800);
     while (!this.over) {
       const actors = [...this.party.filter(p => p.alive), ...this.enemies.filter(e => e.alive)]
         .map(a => ({ a, init: a.spd + Math.random() * 4 })).sort((x, y) => y.init - x.init).map(x => x.a);
@@ -193,7 +196,7 @@ export default class Battle extends Phaser.Scene {
     const p = this.pending, a = p.actor;
     if (p.stage === 'command') return COMMANDS.map(c => ({ label: c, disabled: (c === 'Run' && this.def.noRun) || (c === 'Talk' && !this.def.talk) }));
     if (p.stage === 'skill') return PARTY[a.id].skills.filter(s => (this.state.member(a.id).lvl ?? 1) >= s.level).map(s => ({ label: `${s.name}`, right: `${s.lp}`, skill: s, disabled: a.lp < s.lp, desc: s.desc }));
-    if (p.stage === 'item') return BATTLE_ITEMS.filter(id => this.state.count(id) > 0 && ITEMS[id]).map(id => ({ label: ITEMS[id].name, right: `x${this.state.count(id)}`, item: id, desc: ITEMS[id].desc }));
+    if (p.stage === 'item') return BATTLE_ITEMS.filter(id => this.state.count(id) > 0 && ITEMS[id]?.use).map(id => ({ label: ITEMS[id].name, right: `x${this.state.count(id)}`, item: id, desc: ITEMS[id].desc }));
     if (p.stage === 'target') return p.targets.map(t => ({ label: t.name, target: t }));
     return [];
   }
@@ -293,7 +296,7 @@ export default class Battle extends Phaser.Scene {
   pickTarget(action, side, prev = 'command') {
     const p = this.pending;
     p.action = action; p.prev = prev; p.stage = 'target';
-    p.targets = side === 'enemy' ? this.enemies.filter(e => e.alive) : this.party;
+    p.targets = side === 'enemy' ? this.enemies.filter(e => e.alive) : this.party.filter(m => m.alive);
     p.sel = side === 'ally' ? Math.max(0, p.targets.indexOf(p.actor)) : 0;
     this.drawMenu();
   }

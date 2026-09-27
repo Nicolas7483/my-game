@@ -147,7 +147,37 @@ const m1 = await ev(() => [window.__world.player.x, window.__world.player.y]);
 ok('hero can still move after changing map', Math.hypot(m1[0] - m0[0], m1[1] - m0[1]) > 10, `${m0.map(Math.round)} -> ${m1.map(Math.round)}`);
 ok('first meadow visit happens at nightfall', await ev(() => window.__world.state.isNight()));
 
-// 9. HUD grid audit + performance
+// 9. Battles: two in a row, then a roaming monster that must not attack again after losing
+const fight = async () => {
+  for (let i = 0; i < 90; i++) {
+    const st = await ev(() => { const bt = window.__battle; if (!bt || !bt.sys.isActive()) return { done: true }; return { stage: bt.pending?.stage, canLeave: bt.canLeave }; });
+    if (st.done) return true;
+    if (st.canLeave) { await press('Space'); await wait(600); continue; }
+    if (st.stage) { await press('Enter'); await press('Enter'); }
+    await wait(300);
+  }
+  return false;
+};
+await ev(() => { const w = window.__world; w.state.join('sella'); w.state.gainXp(400); w.startBattle('road_moths'); });
+await wait(900);
+await shot('13-battle');
+ok('battle 1 can be won and closed', await fight());
+await wait(700);
+await ev(() => window.__world.startBattle('road_slimes'));
+await wait(900);
+ok('a second battle can be won and closed', await fight());
+await wait(700);
+await ev(() => { const w = window.__world; w.state.set('ch1'); w.scene.restart({ map: 'riverroad', spot: 'road_west' }); });
+await page.waitForFunction(() => window.__world?.mapId === 'riverroad' && window.__world.roamers?.length, null, { timeout: 8000 });
+await wait(1600);
+await ev(() => { const w = window.__world; const r = w.roamers[0]; w.player.x = r.x + 18; w.player.y = r.y; });
+await wait(1500);
+ok('touching a roaming monster starts a battle', await ev(() => !!window.__battle?.sys.isActive()));
+await fight(); await wait(1500);
+ok('a beaten monster does not attack again', !(await ev(() => !!window.__battle?.sys.isActive())) && !(await ev(() => window.__world.busy)));
+await shot('14-riverroad');
+
+// 10. HUD grid audit + performance
 const grid = await ev(() => (window.__windows || []).filter(w => w.active && w.visible).map(w => [w.x, w.y, w.w, w.h]).filter(([x, y, w, h]) => x % 8 || y % 8 || w % 8 || h % 8));
 ok('every visible window sits on the 8px grid', grid.length === 0, JSON.stringify(grid));
 const fps = await ev(() => new Promise(r => { const s = []; const t = setInterval(() => s.push(window.__game.loop.actualFps), 250); setTimeout(() => { clearInterval(t); r(s.reduce((a, b) => a + b, 0) / s.length); }, 4000); }));

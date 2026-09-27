@@ -1,6 +1,8 @@
-# Lanternfall: The Puddlewick Prologue
+# Lanternfall
 
-A cute top-down pixel RPG made with [Phaser 3](https://phaser.io). Early Final Fantasy feel, warm Dragon Quest Builders colours, and choices that change the world.
+A cute top-down pixel RPG made with [Phaser 3](https://phaser.io). Early Final Fantasy feel, warm Dragon Quest Builders colours, turn-based battles, and choices that change the world.
+
+Playable now: **the Puddlewick Prologue** and **Chapter 1: The Lantern Tax**. Chapters 2 to 5 are planned in `docs/story-bible.md`.
 
 **Play:** https://nicolas7483.github.io/my-game/
 
@@ -11,7 +13,8 @@ A cute top-down pixel RPG made with [Phaser 3](https://phaser.io). Early Final F
 | Space / E / Enter | Talk, look, pick up, confirm |
 | 1 to 5 | Use hotbar item |
 | I / J / M | Bag / Journal / Map |
-| Esc | Menu (save, load, settings) |
+| Esc | Menu (party, save, load, settings) |
+| In battle | Arrows choose, Enter confirm, Esc back |
 | N | Mute |
 
 The game autosaves when you change area and after choices that matter. You can also save in 3 slots and copy a save code from the menu.
@@ -26,7 +29,8 @@ npm run qa         # plays the built game in Chromium and takes screenshots (nee
 ```
 
 ## How it is organised
-- `content/story.js`: every line of dialogue, NPC, quest and ending (plain data, see `docs/content-spec.md`).
+- `content/story.js` (prologue) and `content/chapter1.js`: dialogue, NPCs, quests and endings as plain data (see `docs/content-spec.md`), merged by `content/index.js`.
+- `content/battles.js`: party stats, enemies and encounters.
 - `content/maps/*.js`: maps painted in code (paths, water, props); `src/systems/MapBuilder.js` autotiles them.
 - `content/prefabs.js`: houses, trees and props cut from the tilesets.
 - `src/scenes/`: Title, World, HUD, Dialogue, Menu, Ending.

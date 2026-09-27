@@ -38,7 +38,7 @@ export default {
       ['pine', 0, 20], ['tree', 3, 25], ['bigtree', 7, 26], ['pine', 12, 27], ['tree_round', 17, 26], ['pines', 20, 25],
       ['tree', 34, 26], ['pine', 38, 27], ['bigtree_lime', 43, 25], ['pine', 45, 20], ['tree', 46, 5],
       // Wickwarden camp
-      ['tent_camp', 9, 5, { examine: 'camp_tent' }], ['tent_camp2', 17, 5, { examine: 'camp_tent' }], ['firepit', 14, 8, { examine: 'camp_fire' }],
+      ['tent_camp', 9, 5, { examine: 'camp_tent' }], ['tent_camp2', 17, 5, { examine: 'camp_tent' }], ['firepit', 14, 8, { rest: 'You warm your hands by the fire. The Wickwarden stew smells... fine.' }],
       ['camp_pot', 11, 9, { examine: 'camp_fire' }], ['weapon_rack', 20, 8, { examine: 'camp_rack' }], ['big_barrel', 7, 9], ['log_bench', 13, 11], ['banner_red', 16, 8],
       ['lamp', 12, 13, { examine: 'lamp_post' }], ['cart', 4, 12, { examine: 'camp_wagon' }],
       // dead grove + nest

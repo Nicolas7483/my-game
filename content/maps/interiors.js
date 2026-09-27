@@ -17,10 +17,10 @@ function room(id, name, w, h, wall, exitSpot, props, spots, extra = {}) {
 
 export const inn_in = room('inn_in', 'The Soggy Lantern Inn', 14, 10, 'brick', 'inn_in_front', [
   ['i_table', 2, 3, { examine: 'inn_counter' }], ['i_drawers', 5, 1, { id: 'violet_lantern_box', dialogue: 'violet_lantern_box' }],
-  ['i_shelf', 1, 1], ['firepit', 9, 1, { examine: 'inn_fire' }], ['i_stairs_up', 12, 1], ['i_clock', 7, 1],
+  ['i_shelf', 1, 1], ['firepit', 9, 1, { examine: 'inn_fire' }], ['i_stairs_up', 12, 1, { rest: 'The spare room upstairs. You sleep like a sack of plums.' }], ['i_clock', 7, 1],
   ['i_bench', 8, 5, { examine: 'inn_table' }], ['i_stool', 7, 5], ['i_stool', 11, 5],
   ['i_bench', 2, 7, { examine: 'inn_table' }], ['i_stool', 1, 7], ['i_plant', 12, 7], ['barrel', 1, 5], ['i_jars', 8, 8],
-], { counter: [3, 2], table: [9, 6], fireplace: [10, 3], stairs: [12, 4], center: [7, 5] }, { rugs: [{ x: 6, y: 4, w: 7, h: 3 }] });
+], { counter: [3, 2], table: [9, 7], fireplace: [10, 3], stairs: [12, 4], center: [5, 6] }, { rugs: [{ x: 6, y: 4, w: 7, h: 3 }] });
 
 export const workshop_in = room('workshop_in', "Sella's Workshop", 12, 9, 'orange', 'workshop_in_front', [
   ['i_table', 2, 2, { examine: 'workshop_bench' }], ['camp_pot', 7, 1, { examine: 'workshop_kiln' }], ['i_shelf', 9, 1, { examine: 'workshop_shelf' }],

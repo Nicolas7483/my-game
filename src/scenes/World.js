@@ -58,7 +58,7 @@ export default class World extends Phaser.Scene {
     const def = MAPS[this.mapId];
     this.def = def;
     this.state.d.map = this.mapId;
-    if (this.mapId === 'meadow' && !this.state.has('seen_meadow')) {
+    if (this.mapId === 'meadow' && !this.state.has('seen_meadow') && !this.state.has('ch1')) {
       // The first crossing happens as the sun goes down, so the meadow is always met by starlight.
       this.state.set('seen_meadow');
       if (!this.state.isNight()) this.state.d.hour = 20;
@@ -228,6 +228,13 @@ export default class World extends Phaser.Scene {
     if (spot) { x = spot[0] * TILE + 8; y = spot[1] * TILE + 12; }
     else if (s.x != null && s.map === this.mapId) { x = s.x; y = s.y; }
     else { const st = this.md.spots.start; x = st[0] * TILE + 8; y = st[1] * TILE + 12; }
+    // never start inside furniture: step to the nearest free spot
+    if (!this.canStandAt(x, y)) {
+      found: for (let r = 1; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        const nx = x + dx * TILE, ny = y + dy * TILE;
+        if (this.canStandAt(nx, ny)) { x = nx; y = ny; break found; }
+      }
+    }
     this.player = this.makeActor('c_hunter', x, y);
     this.face(this.player, s.facing || 'down');
     this.lantern = this.addLight(x, y - 8, 'glow_big', 0.75);
@@ -347,7 +354,7 @@ export default class World extends Phaser.Scene {
     if (result === 'won' || result === 'talked') {
       this.state.set('won_' + id);
       if (result === 'talked') this.state.set('talked_' + id);
-      if (r) { this.state.set('cleared_' + r.roamer.id); this.tweens.add({ targets: r, alpha: 0, duration: 300, onComplete: () => r.destroy() }); }
+      if (r) { this.state.set('cleared_' + r.roamer.id); r.stun = 999; this.roamers = this.roamers.filter(x => x !== r); this.tweens.add({ targets: r, alpha: 0, duration: 300, onComplete: () => r.destroy() }); }
       const after = this.battleAfter; this.battleAfter = null;
       this.autosave(true);
       if (after) this.time.delayedCall(350, () => this.openDialogue(after, null));
@@ -470,7 +477,7 @@ export default class World extends Phaser.Scene {
 
   // Flags that change the map rebuild the scene in place (with a flash) so the change is visible at once.
   onWorldChanged(flag) {
-    const mapFlags = ['ch1', 'span_collapsed', 'ford_open', 'bridge_fixed', 'bridge_flimsy', 'stall_fixed', 'garden_bloom', 'meadow_replanted'];
+    const mapFlags = ['ch1', 'span_collapsed', 'span_rebuilt', 'ford_open', 'bridge_fixed', 'bridge_flimsy', 'stall_fixed', 'garden_bloom', 'meadow_replanted'];
     if (flag === 'wisp_friend') { this.spawnCompanion(); }
     if (flag === 'wicks_relit') this.cameras.main.flash(600, 255, 230, 170);
     if (mapFlags.includes(flag) || flag === 'prologue_done' || flag === 'inspector_here' || flag === 'child_escort' || flag === 'wisp_bottled' || flag === 'wisp_friend') {
@@ -503,6 +510,11 @@ export default class World extends Phaser.Scene {
     }
     if (ignore !== this.player && ignore && Math.abs(this.player.x - px) < 7 && Math.abs(this.player.y - 3 - py) < 5) return true;
     return false;
+  }
+
+  canStandAt(x, y) {
+    const bad = (px, py) => { const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE); return tx < 0 || ty < 0 || tx >= this.md.w || ty >= this.md.h || this.md.blocked[ty * this.md.w + tx]; };
+    return !(bad(x - 5, y - 5) || bad(x + 4, y - 5) || bad(x - 5, y - 1) || bad(x + 4, y - 1));
   }
 
   canStand(actor, x, y) {
@@ -689,6 +701,7 @@ export default class World extends Phaser.Scene {
       const { pf } = pr;
       if (tx >= pr.x && ty >= pr.y && tx < pr.x + pf.w && ty < pr.y + pf.h) {
         if (pr.dialogue) return this.openDialogue(pr.dialogue, null);
+        if (pr.rest) return this.rest(pr.rest);
         if (pr.examine && EXAMINE[pr.examine]) return this.examine(pr.examine);
         return this.examineFallback(pr.name);
       }
@@ -717,6 +730,15 @@ export default class World extends Phaser.Scene {
     this.scene.bringToTop('Dialogue');
     const release = () => { for (const n of this.npcs) n.talking = false; };
     bus.once('dialogue-closed', release);
+  }
+
+  // Resting spots (inn room, camp fire): full HP and LP, and a save.
+  rest(line) {
+    this.state.fullHeal();
+    this.game.audioManager.sfx('heal');
+    this.cameras.main.flash(400, 255, 240, 210);
+    this.openDialogue(null, null, [line, 'HP and LP restored. The game is saved.']);
+    this.autosave(true);
   }
 
   examine(id) {

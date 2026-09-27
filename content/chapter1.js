@@ -352,8 +352,12 @@ DIALOGUES.corvin = {
 };
 
 DIALOGUES.corvin_after = {
-  entries: [ { node: 'ca1' } ],
+  entries: [ { if: flag('talked_corvin'), node: 'ct1' }, { node: 'ca1' } ],
   nodes: {
+    ct1: { speaker: N, text: 'Corvin lowers the violet lantern. His hands are shaking.',
+      effects: [ { setFlag: 'corvin_spared' }, toast('You talked Corvin down.', 'heart') ], next: 'ct2' },
+    ct2: { ...CORVIN, text: 'Not today, lantern child. Maybe the Warden is wrong. Maybe.',
+      next: 'fam1' },
     ca1: { speaker: N, text: 'Corvin sits down hard on the well. His ledger lands in a puddle.',
       effects: [ { setFlag: 'corvin_beaten' }, toast('Corvin is beaten. He will remember.', 'star') ],
       next: 'ca2' },
@@ -419,8 +423,11 @@ DIALOGUES.ford = {
 };
 
 DIALOGUES.ford_after = {
-  entries: [ { node: 'a1' } ],
+  entries: [ { if: flag('talked_goons_ford'), node: 't1' }, { node: 'a1' } ],
   nodes: {
+    t1: { speaker: N, text: 'The guards lower their shields and wave you through. Nobody wanted a fight.',
+      effects: [ { setFlag: 'ford_open' }, toast('The ford is open.', 'quest'), { autosave: true } ],
+      branch: [ { if: flag('won_moths_dock'), next: 'a2' } ] },
     a1: { speaker: N, text: 'The guards flee into the reeds, yelling about paperwork.',
       effects: [ { setFlag: 'ford_open' }, toast('The ford is open.', 'quest'), { autosave: true } ],
       branch: [ { if: flag('won_moths_dock'), next: 'a2' } ] },
