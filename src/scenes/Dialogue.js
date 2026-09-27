@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { UI, LINE } from '../config.js';
-import { DIALOGUES, NPCS } from '../../content/story.js';
+import { DIALOGUES, NPCS } from '../../content/index.js';
 import { Window, text } from '../ui/Window.js';
 import { check, apply } from '../systems/State.js';
 import { bus } from '../systems/bus.js';

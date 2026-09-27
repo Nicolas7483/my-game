@@ -1,16 +1,18 @@
 import Phaser from 'phaser';
 import { UI, TILE } from '../config.js';
-import { QUESTS } from '../../content/story.js';
-import { ITEMS } from '../../content/items.js';
+import { QUESTS } from '../../content/index.js';
+import { ITEMS } from '../../content/index.js';
 import { Window, text, itemIcon } from '../ui/Window.js';
 import { useItem } from '../systems/State.js';
 import { bus } from '../systems/bus.js';
 import { writeSlot, readSlot, slotSummary, exportCode, importCode } from '../systems/Save.js';
 import { startGame } from '../systems/Game.js';
 import { drawMiniMap } from './HUD.js';
+import { PARTY, xpToNext } from '../../content/battles.js';
 
 const TABS = [
   { id: 'bag', label: 'Bag' },
+  { id: 'party', label: 'Party' },
   { id: 'journal', label: 'Journal' },
   { id: 'map', label: 'Map' },
   { id: 'save', label: 'Save' },
@@ -60,14 +62,14 @@ export default class Menu extends Phaser.Scene {
     this.add.rectangle(0, 0, 480, 270, 0x0a0c20, 0.6).setOrigin(0);
     this.scene.setVisible(false, 'HUD');
     this.events.once('shutdown', () => this.scene.setVisible(true, 'HUD'));
-    this.tabWin = new Window(this, 16, 24, 112, 128);
+    this.tabWin = new Window(this, 16, 24, 112, 144);
     this.tabTexts = TABS.map((t, i) => text(this, 36, 32 + i * 16, t.label));
     this.tabCursor = this.add.graphics();
     this.contentWin = new Window(this, 136, 24, 328, 224);
-    this.goldWin = new Window(this, 16, 160, 112, 40);
-    this.add.image(28, 173, 'coin', 0);
-    this.goldText = text(this, 38, 169, `${this.state.d.gold} gold`, UI.gold);
-    this.playText = text(this, 24, 183, '', UI.dim);
+    this.goldWin = new Window(this, 16, 176, 112, 40);
+    this.add.image(28, 189, 'coin', 0);
+    this.goldText = text(this, 38, 185, `${this.state.d.gold} gold`, UI.gold);
+    this.playText = text(this, 24, 199, '', UI.dim);
     const mins = Math.floor(this.state.d.playtime / 60);
     this.playText.setText(`Played ${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`);
     this.help = text(this, 16, 256, '', UI.dim);
@@ -192,6 +194,26 @@ export default class Menu extends Phaser.Scene {
       this.t(152, 226, it.use ? 'Enter use   1-5 put on hotbar' : '1-5 put on hotbar', UI.dim);
     }
     this.helpText = 'Enter use   1-5 hotbar slot   Left back';
+  }
+
+  draw_party() {
+    this.heading('Party');
+    const s = this.state;
+    s.d.members.forEach((id, i) => {
+      const P = PARTY[id], m = s.member(id), st = s.stats(id);
+      const y = 50 + i * 88;
+      this.layer.add(this.add.image(166, y + 20, 'f_' + P.face).setScale(1));
+      this.t(192, y, `${P.name}   Lv ${m.lvl}`, UI.select);
+      this.t(192, y + 13, `HP ${m.hp}/${st.maxHp}`, UI.text);
+      this.t(272, y + 13, `LP ${m.lp}/${st.maxLp}`, UI.text);
+      this.t(352, y + 13, `Next ${xpToNext(m.lvl) - m.xp} XP`, UI.dim);
+      this.t(192, y + 26, `Atk ${st.atk}   Def ${st.def}   Spd ${st.spd}`, UI.dim);
+      const skills = P.skills.filter(k => m.lvl >= k.level).map(k => `${k.name} (${k.lp})`).join('  ');
+      this.t(192, y + 40, skills, UI.text, { maxWidth: 260 });
+      const locked = P.skills.find(k => m.lvl < k.level);
+      if (locked) this.t(192, y + 52, `Lv ${locked.level}: ${locked.name}`, 0x6a72a0);
+    });
+    if (s.d.members.length < 2) this.t(148, 150, 'Friends will join you on the road.', UI.dim);
   }
 
   draw_journal() {

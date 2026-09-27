@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import { BASE, WIDTH, HEIGHT } from '../config.js';
 import { SHEETS } from '../../content/prefabs.js';
-import { ITEMS } from '../../content/items.js';
-import { NPCS } from '../../content/story.js';
+import { ITEMS } from '../../content/index.js';
+import { NPCS } from '../../content/index.js';
 import { SFX, AudioManager } from '../systems/Audio.js';
 
 export const CHARACTERS = ['hunter', 'woman', 'inspector', 'villager2', 'villager3', 'villager4', 'villager5', 'oldman', 'oldman2',
-  'oldwoman', 'child', 'knight', 'spirit', 'noble', 'samurai', 'villager', 'villager6', 'monk', 'boy', 'princess', 'master', 'oldman3'];
+  'oldwoman', 'child', 'knight', 'spirit', 'noble', 'samurai', 'villager', 'villager6', 'monk', 'boy', 'princess', 'master', 'oldman3', 'sorcererblack', 'shaman', 'eskimo', 'cavegirl', 'egggirl', 'ninjablue'];
+export const MONSTERS = ['butterfly', 'lanternred', 'lanterngreen', 'bluebat', 'spirit', 'slime', 'mushroom'];
 export const EMOTES = { heart: 27, heartbreak: 26, surprise: 22, alert: 21, question: 23, dots: 20, happy: 11, sad: 16, angry: 19, sleep: 28, star: 29, music: 29, shock: 25, grin: 5 };
 
 export default class Preload extends Phaser.Scene {
@@ -28,6 +29,8 @@ export default class Preload extends Phaser.Scene {
       this.load.image('f_' + c, `faces/${c}.png`);
     }
     this.load.image('shadow', 'chars/shadow.png');
+    for (const m of MONSTERS) this.load.spritesheet('m_' + m, `monsters/${m}.png`, { frameWidth: 16, frameHeight: 16 });
+    this.load.spritesheet('b_giantspirit', 'monsters/giantspirit_idle.png', { frameWidth: 50, frameHeight: 50 });
     for (const a of ['cat', 'dog', 'frog']) this.load.spritesheet('a_' + a, `animals/${a}.png`, { frameWidth: 16, frameHeight: 16 });
     const icons = new Set(Object.values(ITEMS).map(i => i.icon).filter(i => !i.includes(':')));
     for (const i of icons) this.load.image('it_' + i, `items/${i}.png`);
@@ -77,7 +80,7 @@ export default class Preload extends Phaser.Scene {
 
   makeAnimations() {
     const dirs = ['down', 'up', 'left', 'right'];
-    for (const key of this.textures.getTextureKeys().filter(k => k.startsWith('c_'))) {
+    for (const key of this.textures.getTextureKeys().filter(k => k.startsWith('c_') || k.startsWith('m_'))) {
       const short = this.textures.get(key).frameTotal < 17; // some sheets only have 2 rows
       dirs.forEach((d, i) => {
         const frames = short ? [i, 4 + i] : [i, 4 + i, 8 + i, 12 + i];

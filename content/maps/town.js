@@ -36,9 +36,10 @@ export default {
   },
 
   planks(state) {
-    const fixed = state.has('bridge_fixed');
+    const collapsed = state.has('span_collapsed') && !state.has('span_rebuilt');
+    const fixed = state.has('bridge_fixed') && !collapsed;
     const bridge = fixed
-      ? [{ x: 27, y: 5, w: 2, h: 8, tint: state.has('bridge_flimsy') ? 0xb09a88 : undefined }]
+      ? [{ x: 27, y: 5, w: 2, h: 8, tint: state.has('bridge_flimsy') && !state.has('span_rebuilt') ? 0xb09a88 : undefined }]
       : [{ x: 27, y: 5, w: 2, h: 3, broken: [[0, 2], [1, 2]] }, { x: 27, y: 11, w: 2, h: 2, broken: [[0, 0], [1, 0]] }];
     return [...bridge, { x: 45, y: 24, w: 8, h: 2, tint: 0xe2c0a0 }];
   },
@@ -56,13 +57,13 @@ export default {
       ['bigtree', 4, 39], ['tree', 9, 39], ['oak_pink', 12, 38], ['pine', 16, 39], ['tree_round', 19, 39], ['bigtree_lime', 30, 39],
       ['tree', 35, 40], ['pine', 38, 39], ['tree_pink', 41, 40], ['tree', 21, 40],
       // the inn (west)
-      ['inn', 6, 13, { id: 'inn', examine: 'inn_sign' }],
+      ['inn', 6, 13, { id: 'inn', examine: 'inn_sign', enter: 'inn_in' }],
       ['barrel', 10, 15], ['crates', 11, 16, { id: 'crates', dialogue: 'crates' }], ['crate', 12, 16], ['barrel_open', 5, 16],
       ['lamp', 10, 17, { examine: 'lamp_post' }], ['table_long', 11, 19, { id: 'bench', examine: 'bench' }],
       // garden
       ['fence_h', 1, 20], ['fence_h', 1, 26], ['bush_round', 5, 20], ['tree_pink', 2, 22, { examine: 'flowerbed' }],
       // Sella's workshop (east)
-      ['house_red', 38, 15, { id: 'workshop', examine: 'workshop_window' }], ['lamp', 42, 17, { examine: 'lamp_post' }],
+      ['house_red', 38, 15, { id: 'workshop', examine: 'workshop_window', enter: 'workshop_in' }], ['lamp', 42, 17, { examine: 'lamp_post' }],
       ['goods_crates', 42, 15], ['pot', 37, 17],
       // plaza
       ['well', 32, 25, { id: 'well', examine: 'well' }], ['signpost', 24, 21, { id: 'notice_board', examine: 'notice_board' }], ['statue', 30, 20, { examine: 'statue' }],
@@ -72,13 +73,13 @@ export default {
       ['tent', 18, 19, { id: 'stall_tent', examine: 'barrels' }], ['market_goods', 17, 21, { id: 'stall_goods', examine: 'barrels', solid: 1 }],
       ['barrels', 14, 19, { examine: 'barrels' }],
       // Nettie's and Hobb's houses
-      ['hut', 13, 26], ['signpost', 17, 29, { examine: 'mailbox' }],
-      ['house_orange2', 3, 28], ['crates2', 10, 30], ['planks_long', 3, 33],
+      ['hut', 13, 26, { enter: 'nettie_in' }], ['signpost', 17, 29, { examine: 'mailbox' }],
+      ['house_orange2', 3, 28, { enter: 'hobb_in' }], ['crates2', 10, 30], ['planks_long', 3, 33],
       ['planks', 10, 33], ['stump', 5, 35], ['cart', 9, 35],
       // Gil's house near the dock
-      ['house_wood', 41, 26], ['barrel', 44, 27], ['pot', 40, 28],
+      ['house_wood', 41, 26, { enter: 'gil_in' }], ['barrel', 44, 27], ['pot', 40, 28],
       // Nan Wren's cottage (south)
-      ['house_round', 24, 33, { id: 'wren_house' }], ['bush_round', 23, 35], ['berrybush', 28, 33],
+      ['house_round', 24, 33, { id: 'wren_house', enter: 'wren_in' }], ['bush_round', 23, 35], ['berrybush', 28, 33],
       // shrine
       ['statue_orb', 35, 29, { id: 'shrine', examine: 'shrine' }], ['stone_lantern', 34, 30, { examine: 'shrine' }], ['stone_lantern', 38, 30, { examine: 'shrine' }],
       ['torii', 35, 32, { examine: 'shrine' }], ['oak_pink', 30, 30], ['oak_pink', 39, 30],
@@ -109,7 +110,7 @@ export default {
 
   walls(state) {
     const W = [[0, 0, 56, 1], [0, 41, 56, 1], [0, 0, 1, 42], [55, 0, 1, 42]];
-    if (!state.has('bridge_fixed')) W.push([27, 7, 2, 4]);
+    if (!state.has('bridge_fixed') || (state.has('span_collapsed') && !state.has('span_rebuilt'))) W.push([27, 7, 2, 4]);
     return W;
   },
   open() { return [[26, 0, 4, 1]]; },
@@ -125,8 +126,7 @@ export default {
   objects(state) {
     return [
       { x: 27, y: 7, w: 2, h: 5, dialogue: 'bridge_break' },
-      { x: 7, y: 17, examine: 'inn_sign' },
-      { x: 39, y: 17, examine: 'workshop_window' },
+      { x: 24, y: 21, dialogue: 'decree', if: { flag: 'ch1' } },
       { x: 50, y: 26, w: 3, h: 3, examine: 'boat' },
       { x: 43, y: 28, examine: 'fishnet' },
     ];
@@ -139,5 +139,9 @@ export default {
 
   animals: [['cat', 11, 21], ['dog', 45, 23], ['cat', 29, 37]],
 
-  warps: [{ x: 26, y: 0, w: 4, h: 1, to: 'meadow', spot: 'meadow_gate', dir: 'up' }],
+  warps: [
+    { x: 26, y: 0, w: 4, h: 1, to: 'meadow', spot: 'meadow_gate', dir: 'up' },
+    // Gil's boat, once the Span has fallen and he agreed to row you
+    { x: 52, y: 24, w: 1, h: 2, to: 'meadow', spot: 'ferry_landing', msg: 'Gil rows you across the Tamble.', if: { all: [{ flag: 'span_collapsed' }, { notFlag: 'span_rebuilt' }, { flag: 'ferried' }] } },
+  ],
 };

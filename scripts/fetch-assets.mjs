@@ -62,7 +62,22 @@ const SFX = ['Menu/Move1', 'Menu/Accept', 'Menu/Accept3', 'Menu/Cancel', 'Menu/M
   'Voice/Voice1', 'Voice/Voice2', 'Voice/Voice3', 'Voice/Voice5'];
 for (const s of SFX) add(`Audio/Sounds/${s}.wav`, `sfx/${s.split('/')[1].toLowerCase()}.wav`);
 for (const j of ['Success1', 'Success3', 'Secret1', 'Secret2', 'LevelUp2']) add(`Audio/Jingles/${j}.wav`, `sfx/jingle_${j.toLowerCase()}.wav`);
-add('LICENSE.txt', 'LICENSE-ninja-adventure.txt');
+// Chapter 1: monsters, a boss, interiors, battle music
+for (const m of ['Butterfly', 'LanternRed', 'LanternGreen', 'BlueBat', 'Spirit']) {
+  add(`Actor/Monster/${m}/SpriteSheet.png`, `monsters/${m.toLowerCase()}.png`);
+  add(`Actor/Monster/${m}/Faceset.png`, `monsters/${m.toLowerCase()}_face.png`);
+}
+add('Actor/Monster/Slime/Slime.png', 'monsters/slime.png');
+add('Actor/Monster/Mushroom/mushroom.png', 'monsters/mushroom.png');
+for (const f of ['Idle', 'Hit', 'Faceset']) add(`Actor/Boss/GiantSpirit/${f}.png`, `monsters/giantspirit_${f.toLowerCase()}.png`);
+for (const t of ['Elements', 'TilesetInterior', 'TilesetInteriorFloor', 'TilesetWallSimple'])
+  add(`Backgrounds/Tilesets/Interior/${t}.png`, `tiles/interior_${t.toLowerCase()}.png`);
+for (const m of ['17 - Fight', '34  - Fight', '24 - Final Area', '5 - Peaceful', '23 - Road', '20 - Good Time'])
+  add(`Audio/Musics/${m}.ogg`, `music/${m.replace(/^\d+ +- /, '').replace(/[^A-Za-z]+/g, '_').toLowerCase().replace(/_$/, '')}${m.startsWith('34') ? '2' : ''}.ogg`);
+for (const s of ['Hit & Impact/Hit2', 'Hit & Impact/Hit5', 'Magic & Skill/Magic3', 'Magic & Skill/Heal2', 'Whoosh & Slash/Slash', 'Elemental/Fireball', 'Jump & Bounce/Bounce'])
+  add(`Audio/Sounds/${s}.wav`, `sfx/${s.split('/')[1].toLowerCase()}.wav`);
+add('Audio/Jingles/LevelUp1.wav', 'sfx/jingle_levelup1.wav');
+add('Audio/Jingles/GameOver.wav', 'sfx/jingle_gameover.wav');
 const K = BASE + 'kenney-rpg-audio/';
 for (const s of ['footstep00', 'footstep01', 'footstep02', 'footstep03', 'doorOpen_1', 'doorClose_1', 'handleCoins',
   'bookFlip1', 'metalLatch', 'creak1', 'cloth1', 'dropLeather'])

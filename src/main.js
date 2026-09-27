@@ -7,6 +7,8 @@ import HUD from './scenes/HUD.js';
 import Dialogue from './scenes/Dialogue.js';
 import Menu from './scenes/Menu.js';
 import Ending from './scenes/Ending.js';
+import Battle from './scenes/Battle.js';
+import ChapterCard from './scenes/ChapterCard.js';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -20,7 +22,7 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.NONE, autoCenter: Phaser.Scale.CENTER_BOTH },
   audio: { disableWebAudio: false },
   input: { gamepad: false },
-  scene: [Preload, Title, World, HUD, Dialogue, Menu, Ending],
+  scene: [Preload, Title, World, HUD, Dialogue, Menu, Ending, Battle, ChapterCard],
 });
 
 // Integer zoom keeps every pixel square. Below 2x we allow fractional zoom so small screens still fit.

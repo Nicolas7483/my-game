@@ -1,9 +1,10 @@
 import { bus } from './bus.js';
-import { ITEMS } from '../../content/items.js';
-import { QUESTS } from '../../content/story.js';
+import { ITEMS } from '../../content/index.js';
+import { QUESTS } from '../../content/index.js';
 import { START_HOUR } from '../config.js';
+import { statsOf, xpToNext } from '../../content/battles.js';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 // Everything that makes up a playthrough. Plain data so it can be saved as JSON.
 export function newState() {
@@ -11,7 +12,8 @@ export function newState() {
     v: SAVE_VERSION,
     map: 'town', x: null, y: null, spot: 'start', facing: 'down',
     hour: START_HOUR, day: 1, playtime: 0,
-    hp: 6, maxHp: 6, gold: 12,
+    gold: 12,
+    party: { tavi: { lvl: 1, xp: 0, hp: 30, lp: 10 } }, members: ['tavi'],
     flags: [], vars: { aff_sella: 0, warmth: 0, hoard: 0, rep: 0 },
     inv: [{ id: 'lantern', n: 1 }], hotbar: ['lantern', null, null, null, null],
     quests: {}, questOrder: [], seen: {},
@@ -58,7 +60,36 @@ export class State {
     bus.emit('inventory-changed');
   }
   addGold(n) { this.d.gold = Math.max(0, this.d.gold + n); bus.emit('inventory-changed'); }
-  heal(n) { this.d.hp = Math.max(0, Math.min(this.d.maxHp, this.d.hp + n)); bus.emit('hp-changed'); }
+  // Party: levels, HP and lantern power (LP). Stats come from content/battles.js.
+  member(id) { return this.d.party[id]; }
+  stats(id) { return statsOf(id, this.d.party[id]); }
+  join(id) {
+    if (!this.d.party[id]) { const lvl = this.d.party.tavi.lvl; const s = statsOf(id, { lvl }); this.d.party[id] = { lvl, xp: 0, hp: s.maxHp, lp: s.maxLp }; }
+    if (!this.d.members.includes(id)) this.d.members.push(id);
+    bus.emit('hp-changed');
+  }
+  leave(id) { this.d.members = this.d.members.filter(m => m !== id); bus.emit('hp-changed'); }
+  heal(n, id) {
+    for (const m of id ? [id] : this.d.members) { const p = this.d.party[m]; p.hp = Math.max(0, Math.min(this.stats(m).maxHp, p.hp + n)); }
+    bus.emit('hp-changed');
+  }
+  restoreLp(n, id) {
+    for (const m of id ? [id] : this.d.members) { const p = this.d.party[m]; p.lp = Math.max(0, Math.min(this.stats(m).maxLp, p.lp + n)); }
+    bus.emit('hp-changed');
+  }
+  fullHeal() { for (const m of this.d.members) { const s = this.stats(m); Object.assign(this.d.party[m], { hp: s.maxHp, lp: s.maxLp }); } bus.emit('hp-changed'); }
+  allHealthy() { return this.d.members.every(m => this.d.party[m].hp >= this.stats(m).maxHp); }
+  gainXp(n) {
+    const ups = [];
+    for (const m of this.d.members) {
+      const p = this.d.party[m];
+      p.xp += n;
+      while (p.xp >= xpToNext(p.lvl)) { p.xp -= xpToNext(p.lvl); p.lvl += 1; const s = this.stats(m); p.hp = s.maxHp; p.lp = s.maxLp; ups.push({ id: m, lvl: p.lvl }); }
+    }
+    bus.emit('hp-changed');
+    return ups;
+  }
+  hpRatio() { const p = this.d.party.tavi; return p.hp / this.stats('tavi').maxHp; }
 
   quest(id) { return this.d.quests[id]; }
   setQuest(id, stage) {
@@ -113,7 +144,10 @@ export function check(state, c) {
 // Using an item from the hotbar or bag. Healing food is kept when hearts are already full.
 export function useItem(state, item) {
   if (!item?.use) return false;
-  if (item.use.some(e => typeof e.heal === 'number') && state.d.hp >= state.d.maxHp) {
+  const lpOnly = item.use.some(e => typeof e.lp === 'number') && !item.use.some(e => typeof e.heal === 'number');
+  const lpFull = state.d.members.every(m => state.d.party[m].lp >= state.stats(m).maxLp);
+  if (lpOnly && lpFull) { bus.emit('toast', { text: 'Your lantern is already bright.', icon: 'star' }); return false; }
+  if (item.use.some(e => typeof e.heal === 'number') && state.allHealthy()) {
     bus.emit('toast', { text: 'Hearts are full. Save it for later.', icon: 'heart' });
     return false;
   }
@@ -141,6 +175,13 @@ export function apply(state, effects) {
       bus.emit('sfx', 'coin');
     }
     if (typeof e.heal === 'number') state.heal(e.heal);
+    if (typeof e.lp === 'number') state.restoreLp(e.lp);
+    if (e.join) { state.join(e.join); bus.emit('toast', { text: `${e.join[0].toUpperCase() + e.join.slice(1)} joins the party!`, icon: 'heart' }); bus.emit('sfx', 'levelup'); }
+    if (e.leave) state.leave(e.leave);
+    if (e.battle) bus.emit('battle', e.battle, e.after);
+    if (typeof e.setHour === 'number') bus.emit('set-hour', e.setHour);
+    if (e.chapterCard) bus.emit('chapter-card', e.chapterCard);
+    if (e.fullHeal) state.fullHeal();
     if (e.quest) state.setQuest(e.quest[0], e.quest[1]);
     if (e.toast) bus.emit('toast', { text: e.toast, icon: e.icon ?? 'star' });
     if (e.sfx) bus.emit('sfx', e.sfx);

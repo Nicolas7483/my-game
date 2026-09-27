@@ -5,7 +5,10 @@ const SETTINGS = 'lanternfall.settings';
 export const SLOTS = ['auto', '1', '2', '3'];
 
 // Old saves are upgraded step by step (migrations[v] turns version v into v + 1).
-const migrations = {};
+const migrations = {
+  // v1 had 6 half-hearts and no party.
+  1: d => ({ ...d, v: 2, party: { tavi: { lvl: 1, xp: 0, hp: Math.max(5, Math.round(30 * (d.hp ?? 6) / (d.maxHp ?? 6))), lp: 10 } }, members: ['tavi'] }),
+};
 
 function migrate(data) {
   let d = data;

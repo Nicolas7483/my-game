@@ -15,6 +15,12 @@ export const MUSIC = {
   tension: 'music/tension.ogg',
   story: 'music/story_short.ogg',
   sad: 'music/sad_theme.ogg',
+  fight: 'music/fight.ogg',
+  fight2: 'music/fight2.ogg',
+  final_area: 'music/final_area.ogg',
+  peaceful: 'music/peaceful.ogg',
+  road: 'music/road.ogg',
+  good_time: 'music/good_time.ogg',
 };
 
 export const SFX = {
@@ -26,6 +32,8 @@ export const SFX = {
   alert: 'sfx/alert.wav', alert2: 'sfx/alert2.wav', jingle: 'sfx/jingle_success3.wav', levelup: 'sfx/jingle_levelup2.wav',
   voice1: 'sfx/voice1.wav', voice2: 'sfx/voice2.wav', voice3: 'sfx/voice3.wav', voice5: 'sfx/voice5.wav',
   step0: 'sfx/k_footstep00.ogg', step1: 'sfx/k_footstep01.ogg', step2: 'sfx/k_footstep02.ogg', step3: 'sfx/k_footstep03.ogg',
+  hit2: 'sfx/hit2.wav', hit5: 'sfx/hit5.wav', slash: 'sfx/slash.wav', magic3: 'sfx/magic3.wav', heal2: 'sfx/heal2.wav',
+  fireball: 'sfx/fireball.wav', bounce: 'sfx/bounce.wav', jingle_gameover: 'sfx/jingle_gameover.wav', levelup1: 'sfx/jingle_levelup1.wav',
   door: 'sfx/k_dooropen_1.ogg', coins: 'sfx/k_handlecoins.ogg', book: 'sfx/k_bookflip1.ogg', latch: 'sfx/k_metallatch.ogg',
   creak: 'sfx/k_creak1.ogg', cloth: 'sfx/k_cloth1.ogg', drop: 'sfx/k_dropleather.ogg',
 };
@@ -41,6 +49,23 @@ export class AudioManager {
   musicVol() { return this.settings.muted ? 0 : this.settings.music; }
   sfxVol() { return this.settings.muted ? 0 : this.settings.sfx; }
 
+  // Fades run on the game clock, so they finish even if the scene that started them closes.
+  fade(snd, to, ms, then) {
+    this.fades = (this.fades ?? []).filter(f => f.snd !== snd);
+    this.fades.push({ snd, from: snd.volume, to, t: 0, ms, then });
+    if (!this.ticking) {
+      this.ticking = true;
+      this.game.events.on('step', (_, dt) => {
+        for (const f of [...this.fades]) {
+          f.t = Math.min(f.ms, f.t + dt);
+          const alive = f.snd && !f.snd.pendingRemove && f.snd.manager;
+          if (alive) try { f.snd.setVolume(f.from + (f.to - f.from) * (f.t / f.ms)); } catch { /* destroyed */ }
+          if (f.t >= f.ms || !alive) { this.fades.splice(this.fades.indexOf(f), 1); if (alive) f.then?.(); }
+        }
+      });
+    }
+  }
+
   play(id, scene) {
     if (!id || id === this.currentId) return;
     this.currentId = id;
@@ -51,8 +76,8 @@ export class AudioManager {
       const next = this.sound.add(key, { loop: true, volume: 0 });
       next.play();
       this.current = next;
-      scene.tweens.add({ targets: next, volume: this.musicVol(), duration: 1500 });
-      if (old) scene.tweens.add({ targets: old, volume: 0, duration: 1500, onComplete: () => old.destroy() });
+      this.fade(next, this.musicVol(), 1200);
+      if (old && old !== next) this.fade(old, 0, 900, () => old.destroy());
     };
     if (scene.cache.audio.exists(key)) start();
     else {

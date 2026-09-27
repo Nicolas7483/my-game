@@ -60,7 +60,51 @@ function plankTile(i, j, w, h) {
   return PLANK[row + col];
 }
 
+const WALL_STYLES = { beige: 0, orange: 5, brick: 60, moss: 65 };
+
+// Rooms: a floor, a wall ring from the interior sheet, a door gap at the bottom that leads outside.
+function buildInterior(def, state) {
+  const { w, h, interior: it } = def;
+  const empty = () => Array.from({ length: h }, () => new Array(w).fill(null));
+  const layers = { ground: empty(), terrain: empty(), overlay: empty(), deco: empty() };
+  const blocked = new Uint8Array(w * h).fill(1);
+  const surface = new Array(w * h).fill('void');
+  const r = rng(def.seed ?? 3);
+  const { x: rx, y: ry, w: rw, h: rh } = it.room;
+  const b = WALL_STYLES[it.wall ?? 'orange'];
+  const door = rx + (it.door ?? Math.floor(rw / 2));
+  for (let y = ry; y < ry + rh; y++) for (let x = rx; x < rx + rw; x++) {
+    const floor = it.floor[Math.floor(r() * it.floor.length)];
+    layers.ground[y][x] = { sheet: 'ifloor', i: floor };
+    const top = y === ry, bot = y === ry + rh - 1, left = x === rx, right = x === rx + rw - 1;
+    let wi = null;
+    if (top) wi = left ? b : right ? b + 4 : b + 1 + ((x - rx) % 3);
+    else if (bot) wi = left ? b + 40 : right ? b + 44 : b + 41 + ((x - rx) % 3);
+    else if (left) wi = b + 10 + ((y - ry) % 3) * 10;
+    else if (right) wi = b + 14 + ((y - ry) % 3) * 10;
+    if (bot && x === door) wi = null;
+    if (wi !== null) layers.overlay[y][x] = { sheet: 'wall', i: wi };
+    else { blocked[y * w + x] = 0; surface[y * w + x] = 'wood'; }
+  }
+  // top wall is two tiles thick visually: the row under it is still walkable
+  const props = [];
+  for (const [name, x, y, opts = {}] of def.props(state)) {
+    const pf = PREFABS[name];
+    if (!pf) { console.warn('unknown prefab', name); continue; }
+    props.push({ name, x, y, pf, ...opts });
+    const solidRows = opts.solid ?? pf.solid ?? 1;
+    for (let j = pf.h - solidRows; j < pf.h; j++) for (let i = 0; i < pf.w; i++) {
+      const tx = x + i, ty = y + j;
+      if (tx >= 0 && ty >= 0 && tx < w && ty < h) blocked[ty * w + tx] = 1;
+    }
+  }
+  const warps = [{ x: door, y: ry + rh - 1, w: 1, h: 1, to: it.exit.map, spot: it.exit.spot, dir: 'down' }];
+  const spots = { door: [door, ry + rh - 2], ...def.spots };
+  return { w, h, layers, blocked, surface, props, water: [], spots, objects: def.objects?.(state) ?? [], warps, interior: true };
+}
+
 export function buildMap(def, state) {
+  if (def.interior) return buildInterior(def, state);
   const { w, h } = def;
   const p = new Painter(w, h).fill(T.GRASS);
   def.paint(p, state);
@@ -104,11 +148,17 @@ export function buildMap(def, state) {
 
   // Props (houses, trees...). Solid bottom rows block movement.
   const props = [];
+  const doorWarps = [], doorSpots = {};
   for (const [name, x, y, opts = {}] of def.props(state)) {
     const pf = PREFABS[name];
     if (!pf) { console.warn('unknown prefab', name); continue; }
     props.push({ name, x, y, pf, ...opts });
     const solidRows = opts.solid ?? pf.solid ?? 1;
+    if (opts.enter) {
+      const dx = x + (pf.door ?? 1), dy = y + pf.h - 1;
+      doorWarps.push({ x: dx, y: dy, w: 1, h: 1, to: opts.enter, spot: 'door', dir: 'up', door: true });
+      doorSpots[opts.enter + '_front'] = [dx, dy + 1];
+    }
     for (let j = pf.h - solidRows; j < pf.h; j++) for (let i = 0; i < pf.w; i++) {
       if (pf.blockCols && !pf.blockCols.includes(i)) continue;
       const tx = x + i, ty = y + j;
@@ -116,6 +166,8 @@ export function buildMap(def, state) {
     }
     if (pf.blockCols && solidRows === 0) for (const c of pf.blockCols) blocked[(y + pf.h - 1) * w + x + c] = 1;
   }
+
+  for (const d of doorWarps) blocked[d.y * w + d.x] = 0;
 
   // Extra blockers (invisible walls, map borders).
   for (const [x, y, bw = 1, bh = 1] of def.walls?.(state) ?? []) {
@@ -145,5 +197,6 @@ export function buildMap(def, state) {
   // Map edges are walls except where a warp is.
   for (let x = 0; x < w; x++) { blocked[x] ||= 0; }
 
-  return { w, h, layers, blocked, surface, props, water, spots: def.spots, objects: def.objects?.(state) ?? [], warps: def.warps ?? [], painter: p };
+  const warps = [...(def.warps ?? []), ...doorWarps];
+  return { w, h, layers, blocked, surface, props, water, spots: { ...def.spots, ...doorSpots }, objects: def.objects?.(state) ?? [], warps, painter: p };
 }

@@ -49,5 +49,13 @@ export const FALLBACK = {
   cat: ['The cat ignores you. Magnificently.', 'Purrs, once, then pretends it did not.'],
   dog: ['The dog wags so hard its whole body wags.', 'It brings you a stick. The stick is wet.'],
   frog: ['Ribbit. You feel judged.', 'The frog has seen things. Pond things.'],
+  tent: ['A Wickwarden tent. It smells of lamp oil and rules.'],
+  firepit: ['The camp fire burns violet at the edges. That is not normal.'],
+  weapon: ['Spears, shields, and one very polished lantern hook.'],
+  camp: ['Camp gear, stamped with a violet seal.'],
+  log_bench: ['A log bench, worn smooth by bored guards.'],
+  big_barrel: ['A barrel labeled SURPLUS LIGHT. It is empty. For now.'],
+  chest: ['Locked. The lock is shaped like a moth.'],
+  i_: ['Homey. Someone keeps this place with love.', 'Everything smells faintly of plum cake.'],
   thing: ['Nothing unusual. Or is there?', 'You look closer. Still nothing. Still curious.'],
 };

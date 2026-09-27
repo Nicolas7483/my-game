@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { TILE, SPEED, DEPTH, DAY_HOURS_PER_SEC, NIGHT_SPEEDUP, WIDTH, HEIGHT } from '../config.js';
 import { SHEETS } from '../../content/prefabs.js';
-import { NPCS, EXAMINE, INTRO } from '../../content/story.js';
+import { NPCS, EXAMINE, INTRO, CHAPTER_INTROS, CHAPTERS, DIALOGUES } from '../../content/index.js';
 import { FALLBACK } from '../../content/tileinfo.js';
 import { buildMap, rng } from '../systems/MapBuilder.js';
 import { check } from '../systems/State.js';
@@ -10,8 +10,10 @@ import { writeSlot } from '../systems/Save.js';
 import { EMOTES } from './Preload.js';
 import town from '../../content/maps/town.js';
 import meadow from '../../content/maps/meadow.js';
+import riverroad from '../../content/maps/riverroad.js';
+import { INTERIORS } from '../../content/maps/interiors.js';
 
-export const MAPS = { town, meadow };
+export const MAPS = { town, meadow, riverroad, ...INTERIORS };
 const DIRS = { down: [0, 1], up: [0, -1], left: [-1, 0], right: [1, 0] };
 
 // Sky tint over a day (multiply blend). Hours -> colour.
@@ -47,7 +49,9 @@ export default class World extends Phaser.Scene {
     this.arriveSpot = data.spot;
     this.intro = data.intro;
     this.busy = false; // true while a dialogue or menu owns the input
-    this.transitioning = false; this.needsRebuild = false; this.pendingFade = null; this.pendingEnding = false; this.qaMove = null;
+    this.transitioning = false; this.needsRebuild = false; this.pendingFade = null; this.pendingEnding = null; this.qaMove = null;
+    this.pendingBattle = null; this.pendingCard = null; this.inBattle = false;
+    this.startChapter = data.startChapter;
   }
 
   create() {
@@ -63,19 +67,21 @@ export default class World extends Phaser.Scene {
     this.md = buildMap(def, this.state);
     this.registry.set('mapData', this.md);
     this.registry.set('mapDef', def);
-    this.cameras.main.setBackgroundColor('#2a5a3a');
+    this.cameras.main.setBackgroundColor(this.md.interior ? '#0d0f1c' : '#2a5a3a');
 
     this.buildTilemap();
     this.buildProps();
     this.buildAmbience();
     this.spawnPlayer();
     this.spawnNpcs();
+    this.spawnRoamers();
     this.buildNight();
     this.setupInput();
     this.setupBus();
 
     const cam = this.cameras.main;
-    cam.setBounds(0, 0, this.md.w * TILE, this.md.h * TILE);
+    const mw = this.md.w * TILE, mh = this.md.h * TILE;
+    cam.setBounds(Math.min(0, Math.floor((mw - WIDTH) / 2)), Math.min(0, Math.floor((mh - HEIGHT) / 2)), Math.max(mw, WIDTH), Math.max(mh, HEIGHT));
     cam.startFollow(this.player, true, 0.18, 0.18);
     cam.setRoundPixels(true);
     cam.fadeIn(400, 10, 12, 28);
@@ -87,6 +93,9 @@ export default class World extends Phaser.Scene {
     this.lastNight = this.state.isNight();
     this.autosaveTimer = 0;
     if (this.intro) this.time.delayedCall(700, () => this.openDialogue(null, null, INTRO));
+    if (this.startChapter) this.time.delayedCall(300, () => this.showChapterCard(this.startChapter));
+    // Saves that finished the prologue before Chapter 1 existed roll straight into it.
+    else if (this.state.has('prologue_done') && !this.state.has('ch1') && CHAPTERS[0] && !this.intro) this.time.delayedCall(900, () => { if (!this.busy) this.beginChapter(1); });
     this.events.emit('ready');
     window.__world = this;
   }
@@ -268,6 +277,115 @@ export default class World extends Phaser.Scene {
     }
   }
 
+  // ---------------------------------------------------------------- battles
+  spawnRoamers() {
+    this.roamers = [];
+    for (const r of this.def.roamers?.(this.state) ?? []) {
+      if (this.state.has('cleared_' + r.id) || (r.if && !check(this.state, r.if))) continue;
+      const x = r.x * TILE + 8, y = r.y * TILE + 12;
+      const a = this.makeActor('m_' + r.sprite, x, y, { tint: r.tint ?? 0xd8d0ec });
+      if (a.spr.preFX) a.spr.preFX.addColorMatrix().saturate(-0.9);
+      a.roamer = r; a.home = { x, y }; a.wander = 2; a.wait = Math.random() * 1500; a.target = null; a.stun = 1.5;
+      a.spr.play(`m_${r.sprite}_walk_down`);
+      this.roamers.push(a);
+    }
+  }
+
+  updateRoamers(dt, delta) {
+    const p = this.player;
+    for (const r of this.roamers) {
+      if (!r.active) continue;
+      r.stun = Math.max(0, r.stun - dt);
+      const d = Math.hypot(p.x - r.x, p.y - r.y);
+      if (!this.busy && !this.transitioning && r.stun <= 0 && d < 13) { this.touchRoamer(r); return; }
+      if (this.busy) continue;
+      if (d < 72 && r.stun <= 0) {
+        const sp = 34 * dt;
+        this.moveActor(r, ((p.x - r.x) / d) * sp, ((p.y - r.y) / d) * sp);
+        this.animate(r, Math.abs(p.x - r.x) > Math.abs(p.y - r.y) ? (p.x < r.x ? 'left' : 'right') : p.y < r.y ? 'up' : 'down', true);
+      } else if (!r.target) {
+        r.wait -= delta;
+        if (r.wait <= 0) { r.target = this.pickWanderTarget(r); r.wait = 1200 + Math.random() * 2000; }
+      } else {
+        const dx = r.target.x - r.x, dy = r.target.y - r.y, dd = Math.hypot(dx, dy);
+        if (dd < 1.5 || !this.moveActor(r, (dx / dd) * 20 * dt, (dy / dd) * 20 * dt)) r.target = null;
+      }
+      r.setDepth(DEPTH.world + Math.round(r.y));
+    }
+  }
+
+  touchRoamer(r) {
+    this.battleRoamer = r;
+    this.startBattle(r.roamer.battle);
+  }
+
+  startBattle(id, after) {
+    this.pendingBattle = null;
+    this.busy = true; this.inBattle = true;
+    this.battleAfter = after;
+    this.animate(this.player, this.player.facing, false);
+    this.game.audioManager.sfx('alert2', { volume: 0.7 });
+    this.cameras.main.shake(200, 0.004);
+    this.cameras.main.flash(250, 255, 255, 255);
+    this.time.delayedCall(260, () => {
+      this.scene.setVisible(false, 'HUD');
+      this.scene.launch('Battle', { id });
+      this.scene.bringToTop('Battle');
+      this.scene.pause();
+    });
+  }
+
+  onBattleOver({ id, result }) {
+    this.scene.resume();
+    this.scene.setVisible(true, 'HUD');
+    this.inBattle = false; this.busy = false;
+    this.game.audioManager.currentId = null;
+    this.game.audioManager.play(this.musicId(), this);
+    const r = this.battleRoamer; this.battleRoamer = null;
+    this.cameras.main.fadeIn(300, 10, 12, 28);
+    if (result === 'won' || result === 'talked') {
+      this.state.set('won_' + id);
+      if (result === 'talked') this.state.set('talked_' + id);
+      if (r) { this.state.set('cleared_' + r.roamer.id); this.tweens.add({ targets: r, alpha: 0, duration: 300, onComplete: () => r.destroy() }); }
+      const after = this.battleAfter; this.battleAfter = null;
+      this.autosave(true);
+      if (after) this.time.delayedCall(350, () => this.openDialogue(after, null));
+    } else if (result === 'lost') {
+      this.state.fullHeal();
+      const lost = Math.floor(this.state.d.gold * 0.1);
+      if (lost) this.state.addGold(-lost);
+      this.battleAfter = null;
+      bus.emit('toast', { text: lost ? `You wake at the inn. (-${lost} gold)` : 'You wake at the inn, patched up.', icon: 'heart' });
+      this.state.d.map = 'inn_in';
+      this.scene.restart({ map: 'inn_in', spot: 'center' });
+    } else if (r) { r.stun = 3; this.battleAfter = null; }
+  }
+
+  // ---------------------------------------------------------------- chapters
+  showChapterCard(n) {
+    this.busy = true;
+    this.scene.launch('ChapterCard', { n });
+    this.scene.bringToTop('ChapterCard');
+    bus.once('chapter-card-done', () => {
+      this.busy = false;
+      const intro = CHAPTER_INTROS[n];
+      const start = () => { if (DIALOGUES[`ch${n}_start`]) this.openDialogue(`ch${n}_start`, null); };
+      if (intro?.length) this.time.delayedCall(300, () => { this.openDialogue(null, null, intro); bus.once('dialogue-closed', () => this.time.delayedCall(250, start)); });
+      else start();
+    });
+  }
+
+  beginChapter(n) {
+    if (!CHAPTERS[n - 1]) return;
+    const s = this.state;
+    s.set('ch' + n, true);
+    s.d.day += 1; s.d.hour = 8;
+    s.fullHeal();
+    s.d.map = 'town';
+    this.autosave(true);
+    this.scene.restart({ map: 'town', spot: 'wren_porch', startChapter: n });
+  }
+
   // ---------------------------------------------------------------- night
   buildNight() {
     this.night = this.add.rectangle(0, 0, WIDTH, HEIGHT, 0xffffff).setOrigin(0, 0).setScrollFactor(0).setDepth(DEPTH.night).setBlendMode(Phaser.BlendModes.MULTIPLY);
@@ -276,16 +394,16 @@ export default class World extends Phaser.Scene {
 
   updateSky(force) {
     const hr = this.state.d.hour;
-    if (force || Math.abs(hr - (this.skyHour ?? -1)) > 0.01) { this.skyHour = hr; this.night.setFillStyle(skyAt(hr)); }
-    const d = darkness(hr);
+    if (force || Math.abs(hr - (this.skyHour ?? -1)) > 0.01) { this.skyHour = hr; this.night.setFillStyle(this.md.interior ? 0xfff0dc : skyAt(hr)); }
+    const d = this.md.interior ? 0.35 : darkness(hr);
     this.dark = d;
     for (const l of this.lights) {
       const target = l.always ? 0.35 + d * 0.65 : l.isLantern ? d * 0.85 : d;
       l.phase ??= Math.random() * 6.28;
       l.setAlpha(target * (0.95 + 0.05 * Math.sin(this.time.now * 0.004 + l.phase)));
     }
-    this.fireflies.emitting = d > 0.5;
-    this.leaves.emitting = d < 0.5;
+    this.fireflies.emitting = !this.md.interior && d > 0.5;
+    this.leaves.emitting = !this.md.interior && d < 0.5;
     const nightNow = this.state.isNight();
     if (!force && nightNow !== this.lastNight) {
       this.lastNight = nightNow;
@@ -328,12 +446,21 @@ export default class World extends Phaser.Scene {
     on('world-changed', flag => this.onWorldChanged(flag));
     on('emote', (id, kind) => this.emote(id, kind));
     on('fade', to => this.fadeTo(to));
-    on('ending', () => { this.pendingEnding = true; });
+    on('ending', id => { this.pendingEnding = id || 'prologue'; });
+    on('battle', (id, after) => { this.pendingBattle = { id, after }; if (!this.busy) this.startBattle(id, after); });
+    on('chapter-card', n => { this.pendingCard = n; });
+    on('battle-over', r => this.onBattleOver(r));
+    on('begin-chapter', n => this.beginChapter(n));
     on('autosave', () => this.autosave(true));
     on('dialogue-closed', () => {
       this.busy = false;
       if (this.spawnSignature() !== this.spawnSig) this.respawnNpcs();
-      if (this.pendingEnding) { this.pendingEnding = false; this.busy = true; this.state.set('prologue_done'); this.autosave(); this.scene.launch('Ending'); }
+      if (this.pendingEnding) {
+        const id = this.pendingEnding; this.pendingEnding = null; this.busy = true;
+        this.state.set(id === 'prologue' ? 'prologue_done' : `${id}_done`); this.autosave();
+        this.scene.launch('Ending', { id });
+      } else if (this.pendingBattle) { const b = this.pendingBattle; this.startBattle(b.id, b.after); }
+      else if (this.pendingCard) { const n = this.pendingCard; this.pendingCard = null; this.showChapterCard(n); }
     });
     on('menu-closed', () => { this.busy = false; });
     on('sfx', name => this.game.audioManager.sfx(name));
@@ -342,7 +469,7 @@ export default class World extends Phaser.Scene {
 
   // Flags that change the map rebuild the scene in place (with a flash) so the change is visible at once.
   onWorldChanged(flag) {
-    const mapFlags = ['bridge_fixed', 'bridge_flimsy', 'stall_fixed', 'garden_bloom', 'meadow_replanted'];
+    const mapFlags = ['ch1', 'span_collapsed', 'ford_open', 'bridge_fixed', 'bridge_flimsy', 'stall_fixed', 'garden_bloom', 'meadow_replanted'];
     if (flag === 'wisp_friend') { this.spawnCompanion(); }
     if (flag === 'wicks_relit') this.cameras.main.flash(600, 255, 230, 170);
     if (mapFlags.includes(flag) || flag === 'prologue_done' || flag === 'inspector_here' || flag === 'child_escort' || flag === 'wisp_bottled' || flag === 'wisp_friend') {
@@ -417,6 +544,7 @@ export default class World extends Phaser.Scene {
     this.updateNpcs(dt, delta);
     this.updateCompanion(dt);
     this.updatePrompt();
+    this.updateRoamers(dt, delta);
     this.autosaveTimer += dt;
     if (this.autosaveTimer > 120) this.autosave();
   }
@@ -611,18 +739,20 @@ export default class World extends Phaser.Scene {
 
   // ---------------------------------------------------------------- warps & rebuilds
   warpAt(tx, ty) {
-    return this.def.warps.find(wp => tx >= wp.x && ty >= wp.y - 1 && tx < wp.x + wp.w && ty <= wp.y + 1);
+    return this.md.warps.find(wp => tx >= wp.x && ty >= wp.y - 1 && tx < wp.x + wp.w && ty <= wp.y + 1);
   }
 
   checkWarp() {
     const p = this.player;
-    const tx = Math.floor(p.x / TILE), ty = Math.floor((p.y - 2) / TILE);
-    for (const wp of this.def.warps) {
-      const inside = tx >= wp.x && tx < wp.x + wp.w && (wp.dir === 'up' ? p.y < (wp.y + 1) * TILE - 4 : p.y > wp.y * TILE + 4);
+    const tx = Math.floor(p.x / TILE), ty = Math.floor((p.y - 3) / TILE);
+    for (const wp of this.md.warps) {
+      const inside = tx >= wp.x && tx < wp.x + wp.w && ty >= wp.y && ty < wp.y + (wp.h ?? 1);
       if (inside && !this.transitioning) {
         if (wp.if && !check(this.state, wp.if)) continue;
+        if (!MAPS[wp.to]) continue;
         this.transitioning = true;
-        this.game.audioManager.sfx('whoosh', { volume: 0.4 });
+        this.game.audioManager.sfx(wp.door ? 'door' : 'whoosh', { volume: 0.5 });
+        if (wp.msg) bus.emit('toast', { text: wp.msg, icon: 'star' });
         this.cameras.main.fadeOut(350, 10, 12, 28);
         this.cameras.main.once('camerafadeoutcomplete', () => {
           this.state.d.map = wp.to; this.state.d.x = null;

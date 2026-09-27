@@ -15,6 +15,7 @@ export default {
     p.path(T.DIRT, [[21, 22], [27, 22], [27, 14]]);
     p.blob(T.DIRT, 20.5, 9, 4, 3, 0.25, 5);
     p.path(T.DIRT, [[15, 18], [8, 18], [8, 12]]);
+    p.path(T.DIRT, [[27, 20], [27, 24], [44, 24]]);
   },
 
   planks() { return [{ x: 21, y: 29, w: 2, h: 3 }]; },
@@ -37,6 +38,7 @@ export default {
       ['tree_pink', 11, 9], ['tree', 34, 23], ['tree_willow', 25, 11], ['stump', 6, 22], ['log', 9, 24],
       ['bigtree_pink', 4, 11], ['tree_round', 36, 3],
     ];
+    if (!state.has('ch1')) P.push(['log', 42, 23, { examine: 'fallen_log' }], ['log', 42, 24, { examine: 'fallen_log' }], ['log', 42, 25, { examine: 'fallen_log' }]);
     return P;
   },
 
@@ -49,11 +51,11 @@ export default {
   },
 
   walls() { return [[0, 0, 44, 1], [0, 31, 44, 1], [0, 0, 1, 32], [43, 0, 1, 32]]; },
-  open() { return [[21, 31, 2, 1]]; },
+  open(state) { return state.has('ch1') ? [[21, 31, 2, 1], [43, 24, 1, 2]] : [[21, 31, 2, 1]]; },
 
   spots: {
     meadow_gate: [21, 27], pond: [28, 12], reeds: [29, 16], clearing: [21, 8], dimspot: [8, 20], old_oak: [7, 9],
-    flowers: [31, 20], start: [21, 27],
+    flowers: [31, 20], start: [21, 27], meadow_east: [41, 24], ferry_landing: [21, 27],
   },
 
   objects() {
@@ -68,5 +70,7 @@ export default {
 
   animals: [['frog', 31, 17], ['frog', 26, 14]],
 
-  warps: [{ x: 21, y: 31, w: 2, h: 1, to: 'town', spot: 'bridge_north', dir: 'down' }],
+  warps: [
+    { x: 21, y: 31, w: 2, h: 1, to: 'town', spot: 'bridge_north', dir: 'down', if: { not: { all: [{ flag: 'span_collapsed' }, { notFlag: 'span_rebuilt' }] } } },
+    { x: 21, y: 31, w: 2, h: 1, to: 'town', spot: 'dock', msg: 'Gil rows you back to the dock.', if: { all: [{ flag: 'span_collapsed' }, { notFlag: 'span_rebuilt' }] } }, { x: 43, y: 24, w: 1, h: 2, to: 'riverroad', spot: 'road_west', dir: 'right', if: { flag: 'ch1' } }],
 };

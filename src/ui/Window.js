@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { UI, GRID, FONT, FONT_SIZE, LINE } from '../config.js';
-import { ITEMS } from '../../content/items.js';
+import { ITEMS } from '../../content/index.js';
 
 // Every panel in the game goes through here: same gradient, same border, sizes on the 8px grid.
 export const SIZES = {

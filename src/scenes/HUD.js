@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { UI, TILE } from '../config.js';
-import { QUESTS } from '../../content/story.js';
-import { ITEMS } from '../../content/items.js';
+import { QUESTS } from '../../content/index.js';
+import { ITEMS } from '../../content/index.js';
 import { Window, text, shadowText, itemIcon } from '../ui/Window.js';
 import { useItem } from '../systems/State.js';
 import { bus } from '../systems/bus.js';
@@ -29,7 +29,7 @@ export function drawMiniMap(scene, md, key, px = MINI_PX) {
   if (scene.textures.exists(key)) scene.textures.remove(key);
   const tex = scene.textures.createCanvas(key, md.w * px, md.h * px);
   const ctx = tex.getContext();
-  const col = { grass: '#6fa84a', dirt: '#d9a066', water: '#4aa3d8', wood: '#b0703a' };
+  const col = { grass: '#6fa84a', dirt: '#d9a066', water: '#4aa3d8', wood: '#b0703a', void: '#10132a' };
   for (let y = 0; y < md.h; y++) for (let x = 0; x < md.w; x++) {
     let c = col[md.surface[y * md.w + x]] ?? col.grass;
     if (md.surface[y * md.w + x] === 'grass' && (x + y) % 2) c = '#69a146';
@@ -159,8 +159,9 @@ export default class HUD extends Phaser.Scene {
   refreshAll() { this.refreshHearts(); this.refreshHotbar(); this.refreshQuest(); this.refreshClock(); this.refreshMap(); }
 
   refreshHearts() {
-    const hp = this.state.d.hp;
-    this.hearts.forEach((h, i) => { const v = hp - i * 2; h.setFrame(v >= 2 ? 4 : v === 1 ? 2 : 0); });
+    // Three hearts show Tavi's HP in thirds (full, half, empty).
+    const r = this.state.hpRatio() * 6;
+    this.hearts.forEach((h, i) => { const v = r - i * 2; h.setFrame(v >= 1.5 ? 4 : v > 0.2 ? 2 : 0); });
   }
 
   refreshClock() {
